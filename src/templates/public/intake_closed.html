@@ -1,0 +1,8 @@
+{% extends "public/_layout.html" %}
+{% block title %}{{ partner.name }}{% endblock %}
+{% block public_content %}
+<div class="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+  <h1 class="text-lg font-semibold text-slate-900">{{ t.inactive }}</h1>
+  <p class="mt-2 text-sm text-slate-600">{{ partner.name }}{% if partner.contact_phone %} · {{ partner.contact_phone }}{% endif %}</p>
+</div>
+{% endblock %}

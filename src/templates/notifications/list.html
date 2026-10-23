@@ -1,0 +1,20 @@
+{% extends "app_shell.html" %}
+{% block title %}Notifications{% endblock %}
+{% block content %}
+<div class="mx-auto max-w-3xl">
+  <div class="flex items-center justify-between">
+    <h1 class="text-2xl font-semibold tracking-tight text-brand-900">Notifications</h1>
+    <form method="post" action="{% url 'notification-read-all' %}">{% csrf_token %}<button class="text-sm font-medium text-brand-600 hover:underline">Mark all as read</button></form>
+  </div>
+  <ul class="mt-6 divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200 bg-white">
+    {% for n in notifications %}
+    <li><a href="{% url 'notification-open' n.pk %}" class="flex items-start gap-3 px-5 py-3.5 hover:bg-slate-50">
+      <span class="mt-1.5 h-2 w-2 shrink-0 rounded-full {% if not n.read_at %}bg-accent-500{% endif %}" aria-hidden="true"></span>
+      <span class="flex-1 text-sm {% if not n.read_at %}font-medium text-slate-900{% else %}text-slate-600{% endif %}">{{ n.message }}{% if not n.read_at %}<span class="sr-only"> (unread)</span>{% endif %}</span>
+      <span class="shrink-0 text-xs text-slate-400">{{ n.created_at|timesince }} ago</span>
+    </a></li>
+    {% empty %}<li class="px-5 py-10 text-center text-sm text-slate-500">You're all caught up.</li>{% endfor %}
+  </ul>
+  {% include "partials/pagination.html" %}
+</div>
+{% endblock %}

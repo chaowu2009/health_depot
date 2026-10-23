@@ -1,0 +1,14 @@
+{% if form.non_field_errors %}<div class="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800" role="alert">{{ form.non_field_errors|join:" " }}</div>{% endif %}
+<div class="grid gap-3 sm:grid-cols-2">
+  {% include "partials/field.html" with field=form.type %}
+  <div class="flex items-end pb-2">{% include "partials/field.html" with field=form.required %}</div>
+  {% include "partials/field.html" with field=form.label %}
+  {% include "partials/field.html" with field=form.label_es %}
+  {% include "partials/field.html" with field=form.help_text %}
+  {% include "partials/field.html" with field=form.help_es %}
+  <div class="sm:col-span-2">{% include "partials/field.html" with field=form.options_text %}</div>
+  {% include "partials/field.html" with field=form.show_if_field %}
+  {% include "partials/field.html" with field=form.show_if_equals %}
+  {% include "partials/field.html" with field=form.need_tag %}
+  {% include "partials/field.html" with field=form.need_values %}
+</div>

@@ -1,0 +1,14 @@
+{
+  "identities": [
+    {
+      "name": "health-depot-local",
+      "credentials": [
+        {
+          "accessKey": "healthdepot-local",
+          "secretKey": "healthdepot-local-secret-change-me"
+        }
+      ],
+      "actions": ["Admin", "Read", "Write", "List", "Tagging"]
+    }
+  ]
+}

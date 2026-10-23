@@ -1,0 +1,43 @@
+# Secrets and local data — never commit
+.env
+.env.*
+!.env.example
+backups/
+deploy/caddy/certs/*
+!deploy/caddy/certs/.gitkeep
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Proposal and private working material
+CLAUDE.md
+MVP_Build_Prompts.md
+PROPOSAL_NOTES.md
+DEMO_VIDEO_NARRATION.md
+CCHD_RFP_*.pdf
+Claude outputs/
+demo-2fa-qr.png
+
+# Build outputs
+src/static/css/app.css
+staticfiles/
+node_modules/
+screenshots/*.tmp
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+~$*

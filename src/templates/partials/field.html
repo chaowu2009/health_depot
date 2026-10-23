@@ -1,0 +1,19 @@
+{% load ui %}
+{% if field.is_hidden %}{{ field }}{% else %}
+<div class="space-y-1">
+  {% if field|is_checkbox %}
+    <div class="flex items-center gap-2">
+      {{ field|styled }}
+      <label for="{{ field.id_for_label }}" class="text-sm font-medium text-slate-700">{{ field.label }}</label>
+    </div>
+  {% else %}
+    <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-slate-700">{{ field.label }}{% if field.field.required %} <span class="text-red-700" aria-hidden="true">*</span>{% endif %}</label>
+    {{ field|styled }}
+  {% endif %}
+  {% if field.errors %}
+    <p id="{{ field.auto_id }}_error" class="text-sm text-red-700">{{ field.errors|join:" " }}</p>
+  {% elif field.help_text %}
+    <p id="{{ field.auto_id }}_help" class="text-xs text-slate-500">{{ field.help_text|safe }}</p>
+  {% endif %}
+</div>
+{% endif %}

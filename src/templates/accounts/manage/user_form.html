@@ -1,0 +1,78 @@
+{% extends "app_shell.html" %}
+{% block title %}{% if edited_user.pk %}Edit user{% else %}Add user{% endif %}{% endblock %}
+{% block content %}
+<div class="mx-auto max-w-3xl">
+  <a href="{% url 'manage-user-list' %}" class="text-sm text-brand-600 hover:underline">← All users</a>
+  <h1 class="mt-2 text-2xl font-semibold tracking-tight text-brand-900">{% if edited_user.pk %}{{ edited_user.get_full_name|default:edited_user.email }}{% else %}Add user{% endif %}</h1>
+
+  <form method="post" class="mt-6 space-y-6" novalidate>
+    {% csrf_token %}
+    {% if form.non_field_errors %}<div class="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800" role="alert">{{ form.non_field_errors|join:" " }}</div>{% endif %}
+
+    <section class="rounded-xl border border-slate-200 bg-white p-6">
+      <h2 class="text-base font-semibold text-brand-900">Profile</h2>
+      <div class="mt-4 grid gap-4 sm:grid-cols-2">
+        {% include "partials/field.html" with field=form.email %}
+        {% include "partials/field.html" with field=form.title %}
+        {% include "partials/field.html" with field=form.first_name %}
+        {% include "partials/field.html" with field=form.last_name %}
+        {% include "partials/field.html" with field=form.phone %}
+      </div>
+    </section>
+
+    <section class="rounded-xl border border-slate-200 bg-white p-6">
+      <h2 class="text-base font-semibold text-brand-900">Role and organization</h2>
+      <div class="mt-4 grid gap-4 sm:grid-cols-2">
+        {% include "partials/field.html" with field=form.organization %}
+        {% include "partials/field.html" with field=form.role %}
+        {% include "partials/field.html" with field=form.is_active %}
+      </div>
+    </section>
+
+    <section class="rounded-xl border border-slate-200 bg-white p-6">
+      <h2 class="text-base font-semibold text-brand-900">Program access</h2>
+      <p class="mt-1 text-sm text-slate-600">Health department staff only see clients, referrals and cases in these programs. Partner users don't need programs.</p>
+      {{ formset.management_form }}
+      {% if formset.non_form_errors %}<p class="mt-2 text-sm text-red-700">{{ formset.non_form_errors|join:" " }}</p>{% endif %}
+      <div class="mt-4 space-y-3">
+        {% for f in formset %}
+        <div class="grid items-end gap-3 rounded-lg border border-slate-100 bg-slate-50 p-3 sm:grid-cols-[1fr_12rem_auto]">
+          {% for hidden in f.hidden_fields %}{{ hidden }}{% endfor %}
+          {% include "partials/field.html" with field=f.program %}
+          {% include "partials/field.html" with field=f.access_level %}
+          {% if f.instance.pk %}{% include "partials/field.html" with field=f.DELETE %}{% endif %}
+        </div>
+        {% endfor %}
+      </div>
+      <p class="mt-2 text-xs text-slate-500">Save to get more empty rows.</p>
+    </section>
+
+    <section class="rounded-xl border border-slate-200 bg-white p-6">
+      <h2 class="text-base font-semibold text-brand-900">{% if edited_user.pk %}Set a new password{% else %}Initial password{% endif %}</h2>
+      <div class="mt-4 grid gap-4 sm:grid-cols-2">
+        {% include "partials/field.html" with field=form.new_password1 %}
+        {% include "partials/field.html" with field=form.new_password2 %}
+      </div>
+      <p class="mt-2 text-xs text-slate-500">Share the password securely. The user sets up two-factor authentication at first sign-in.</p>
+    </section>
+
+    <div class="flex gap-3">
+      <button type="submit" class="rounded-md bg-brand-600 px-5 py-2 text-sm font-semibold text-white hover:bg-brand-700">Save</button>
+      <a href="{% url 'manage-user-list' %}" class="rounded-md border border-slate-300 bg-white px-5 py-2 text-sm font-medium hover:bg-slate-50">Cancel</a>
+    </div>
+  </form>
+
+  {% if edited_user.pk %}
+  <section class="mt-8 rounded-xl border border-slate-200 bg-white p-6">
+    <h2 class="text-base font-semibold text-brand-900">Two-factor authentication</h2>
+    <p class="mt-1 text-sm text-slate-600">Status: {% if has_mfa %}<strong>Enrolled</strong>{% else %}<strong>Not set up</strong> — the user will be asked at next sign-in.{% endif %}</p>
+    {% if has_mfa %}
+    <form method="post" action="{% url 'manage-user-reset-mfa' edited_user.pk %}" class="mt-4">
+      {% csrf_token %}
+      <button type="submit" class="rounded-md border border-red-300 bg-white px-4 py-2 text-sm font-medium text-red-800 hover:bg-red-50">Reset two-factor (lost phone)</button>
+    </form>
+    {% endif %}
+  </section>
+  {% endif %}
+</div>
+{% endblock %}

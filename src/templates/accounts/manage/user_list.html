@@ -1,0 +1,53 @@
+{% extends "app_shell.html" %}
+{% block title %}Users & access{% endblock %}
+{% block content %}
+<div class="mx-auto max-w-6xl">
+  <div class="flex flex-wrap items-end justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-semibold tracking-tight text-brand-900">Administration</h1>
+      <p class="mt-1 text-sm text-slate-600">Manage who can sign in, their role, and which programs they can see.</p>
+    </div>
+    <a href="{% url 'manage-user-create' %}" class="rounded-md bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700">Add user</a>
+  </div>
+  {% include "accounts/manage/_tabs.html" %}
+
+  <form method="get" class="mt-6 flex flex-wrap items-end gap-3" role="search">
+    <div>
+      <label for="q" class="block text-xs font-medium text-slate-600">Search</label>
+      <input id="q" name="q" value="{{ q }}" placeholder="Name or email" class="mt-1 w-64 rounded-md border border-slate-300 px-3 py-2 text-sm">
+    </div>
+    <div>
+      <label for="role" class="block text-xs font-medium text-slate-600">Role</label>
+      <select id="role" name="role" class="mt-1 rounded-md border border-slate-300 px-3 py-2 text-sm">
+        <option value="">All roles</option>
+        {% for value, label in roles %}<option value="{{ value }}" {% if value == role %}selected{% endif %}>{{ label }}</option>{% endfor %}
+      </select>
+    </div>
+    <button class="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium hover:bg-slate-50">Filter</button>
+  </form>
+
+  <div class="mt-4 overflow-x-auto rounded-xl border border-slate-200 bg-white">
+    <table class="min-w-full divide-y divide-slate-200 text-sm">
+      <caption class="sr-only">Users</caption>
+      <thead class="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
+        <tr><th scope="col" class="px-4 py-3">Name</th><th scope="col" class="px-4 py-3">Role</th><th scope="col" class="px-4 py-3">Organization</th><th scope="col" class="px-4 py-3">Two-factor</th><th scope="col" class="px-4 py-3">Status</th><th scope="col" class="px-4 py-3">Last sign-in</th></tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100">
+        {% for u in users %}
+        <tr class="hover:bg-slate-50">
+          <td class="px-4 py-3"><a href="{% url 'manage-user-edit' u.pk %}" class="font-medium text-brand-600 hover:underline">{{ u.get_full_name|default:u.email }}</a><div class="text-xs text-slate-500">{{ u.email }}</div></td>
+          <td class="px-4 py-3">{{ u.get_role_display }}</td>
+          <td class="px-4 py-3">{{ u.organization|default:"—" }}</td>
+          <td class="px-4 py-3">{% if u.has_mfa %}<span class="rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-800">Enrolled</span>{% else %}<span class="rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-900">Not set up</span>{% endif %}</td>
+          <td class="px-4 py-3">{% if u.is_active %}Active{% else %}<span class="text-slate-500">Inactive</span>{% endif %}</td>
+          <td class="px-4 py-3 text-slate-500">{{ u.last_login|date:"M j, Y g:i a"|default:"Never" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" class="px-4 py-8 text-center text-slate-500">No users match.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% include "partials/pagination.html" %}
+</div>
+{% endblock %}

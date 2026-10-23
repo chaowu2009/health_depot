@@ -1,0 +1,43 @@
+{% extends "app_shell.html" %}
+{% block title %}Scheduling{% endblock %}
+{% block content %}
+<div class="mx-auto max-w-7xl">
+  {% include "phase2/_header.html" with title="Multi-clinic scheduling" subtitle="Calendars across clinics and service lines, with provider and room lanes." %}
+  <div class="mt-5 flex flex-wrap items-center justify-between gap-3">
+    <div class="flex items-center gap-2">
+      <a href="?week={{ week|add:'-1' }}" class="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm hover:bg-slate-50" aria-label="Previous week">←</a>
+      <a href="?week=0" class="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm hover:bg-slate-50">This week</a>
+      <a href="?week={{ week|add:'1' }}" class="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm hover:bg-slate-50" aria-label="Next week">→</a>
+      <span class="ml-2 text-sm text-slate-600">{{ total }} appointments · {{ self_booked }} self-booked</span>
+    </div>
+    <div class="flex items-center gap-4">
+      <label class="flex items-center gap-2 text-sm" x-data="{ on: true }"><button type="button" role="switch" :aria-checked="on" @click="on = !on" class="relative h-5 w-9 rounded-full transition" :class="on ? 'bg-accent-500' : 'bg-slate-300'"><span class="absolute top-0.5 h-4 w-4 rounded-full bg-white transition" :class="on ? 'left-4' : 'left-0.5'"></span></button> Sync with Google Calendar</label>
+      <a href="{% url 'phase2-booking' %}" class="rounded-md bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700">Public booking page</a>
+    </div>
+  </div>
+  <div class="mt-4 overflow-x-auto rounded-xl border border-slate-200 bg-white">
+    <div class="grid min-w-[1100px] grid-cols-5 divide-x divide-slate-200">
+      {% for col in columns %}
+      <div>
+        <div class="sticky top-0 border-b border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-brand-900">{{ col.day|date:"D, M j" }}</div>
+        {% for lane in col.clinics %}
+        <div class="border-b border-slate-100 p-2">
+          <p class="mb-1 text-[11px] font-semibold uppercase tracking-wider text-slate-500">{{ lane.clinic.short }}</p>
+          <ul class="space-y-1">
+            {% for a in lane.appts|slice:":5" %}
+            <li class="rounded-md border-l-4 {% if a.booked_by == 'Self-booked' %}border-accent-500 bg-accent-500/5{% elif a.booked_by == 'Partner' %}border-amber-500 bg-amber-50{% else %}border-brand-600 bg-brand-50{% endif %} px-2 py-1 text-xs">
+              <p class="font-semibold text-slate-800">{{ a.start|time:"g:i" }}–{{ a.end|time:"g:i a" }} · {{ a.service }}</p>
+              <p class="text-slate-600">{{ a.client }} · {{ a.provider }}</p>
+            </li>
+            {% endfor %}
+            {% if lane.appts|length > 5 %}<li class="text-xs text-slate-500">+{{ lane.appts|length|add:"-5" }} more</li>{% endif %}
+          </ul>
+        </div>
+        {% endfor %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  <p class="mt-3 flex flex-wrap gap-4 text-xs text-slate-500"><span class="flex items-center gap-1"><span class="h-3 w-1 bg-brand-600"></span>Booked by staff</span><span class="flex items-center gap-1"><span class="h-3 w-1 bg-accent-500"></span>Self-booked by client</span><span class="flex items-center gap-1"><span class="h-3 w-1 bg-amber-500"></span>Booked by partner</span></p>
+</div>
+{% endblock %}

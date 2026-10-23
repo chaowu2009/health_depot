@@ -1,0 +1,47 @@
+{% extends "app_shell.html" %}
+{% block title %}{% if partner.pk %}Edit {{ partner.name }}{% else %}Add partner{% endif %}{% endblock %}
+{% block content %}
+<div class="mx-auto max-w-3xl">
+  <a href="{% if partner.pk %}{% url 'partner-detail' partner.pk %}{% else %}{% url 'partner-list' %}{% endif %}" class="text-sm text-brand-600 hover:underline">← Back</a>
+  <h1 class="mt-2 text-2xl font-semibold tracking-tight text-brand-900">{% if partner.pk %}Edit {{ partner.name }}{% else %}Add partner{% endif %}</h1>
+  <form method="post" enctype="multipart/form-data" class="mt-6 space-y-6" novalidate>
+    {% csrf_token %}
+    {% if form.non_field_errors %}<div class="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800" role="alert">{{ form.non_field_errors|join:" " }}</div>{% endif %}
+    <section class="rounded-xl border border-slate-200 bg-white p-6">
+      <h2 class="text-base font-semibold text-brand-900">Organization</h2>
+      <div class="mt-4 grid gap-4 sm:grid-cols-2">
+        <div class="sm:col-span-2">{% include "partials/field.html" with field=form.name %}</div>
+        {% include "partials/field.html" with field=form.contact_name %}
+        {% include "partials/field.html" with field=form.contact_email %}
+        {% include "partials/field.html" with field=form.contact_phone %}
+        {% include "partials/field.html" with field=form.website %}
+        <div class="sm:col-span-2">{% include "partials/field.html" with field=form.address %}</div>
+      </div>
+    </section>
+    <section class="rounded-xl border border-slate-200 bg-white p-6">
+      <h2 class="text-base font-semibold text-brand-900">Services</h2>
+      <fieldset class="mt-4">
+        <legend class="text-sm font-medium text-slate-700">Service types</legend>
+        <div class="mt-2 grid gap-2 sm:grid-cols-3">{% for cb in form.service_types %}<label class="flex items-center gap-2 text-sm">{{ cb.tag }} {{ cb.choice_label }}</label>{% endfor %}</div>
+      </fieldset>
+      <div class="mt-4">{% include "partials/field.html" with field=form.service_area_zips %}</div>
+      <fieldset class="mt-4">
+        <legend class="text-sm font-medium text-slate-700">Programs</legend>
+        <div class="mt-2 grid gap-2 sm:grid-cols-2">{% for cb in form.programs %}<label class="flex items-center gap-2 text-sm">{{ cb.tag }} {{ cb.choice_label }}</label>{% endfor %}</div>
+      </fieldset>
+    </section>
+    <section class="rounded-xl border border-slate-200 bg-white p-6">
+      <h2 class="text-base font-semibold text-brand-900">Branding on referral forms</h2>
+      <div class="mt-4 grid gap-4 sm:grid-cols-2">
+        {% include "partials/field.html" with field=form.logo %}
+        {% include "partials/field.html" with field=form.brand_color %}
+      </div>
+      {% if partner.logo_url %}<img src="{{ partner.logo_url }}" alt="Current logo" class="mt-4 h-14 rounded border border-slate-200 bg-white p-1">{% endif %}
+      <div class="mt-4">{% include "partials/field.html" with field=form.is_active %}</div>
+    </section>
+    <div class="flex gap-3">
+      <button type="submit" class="rounded-md bg-brand-600 px-5 py-2 text-sm font-semibold text-white hover:bg-brand-700">Save</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

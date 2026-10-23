@@ -1,0 +1,72 @@
+{% extends "app_shell.html" %}
+{% block title %}Referrals{% endblock %}
+{% block content %}
+<div class="mx-auto max-w-7xl">
+  <div class="flex flex-wrap items-end justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-semibold tracking-tight text-brand-900">Referrals</h1>
+      <p class="mt-1 text-sm text-slate-600">Every referral, from submission to outcome. Open one to act, message the other organization, or see its timeline.</p>
+    </div>
+    {% if can_create %}<a href="{% url 'referral-create' %}" class="rounded-md bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700">Refer a client</a>{% endif %}
+  </div>
+
+  <div class="mt-5 flex flex-wrap gap-2 text-sm">
+    <a href="?status=OPEN" class="rounded-full border border-slate-200 bg-white px-3 py-1 hover:border-slate-300">Open <span class="ml-1 font-semibold">{{ counts.open }}</span></a>
+    <a href="?overdue=on" class="rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-rose-900 hover:border-rose-300">Overdue <span class="ml-1 font-semibold">{{ counts.overdue }}</span></a>
+    {% if not is_partner %}<a href="?mine=on&amp;status=OPEN" class="rounded-full border border-slate-200 bg-white px-3 py-1 hover:border-slate-300">Assigned to me <span class="ml-1 font-semibold">{{ counts.mine }}</span></a>{% endif %}
+    {% for v in saved_views %}
+    <span class="inline-flex items-center gap-1 rounded-full border border-accent-500/40 bg-accent-500/5 pl-3 pr-1">
+      <a href="?{% for k, val in v.filters.items %}{{ k }}={{ val|urlencode }}&amp;{% endfor %}" class="py-1 text-accent-600">{{ v.name }}</a>
+      <form method="post" action="{% url 'referral-view-delete' v.pk %}">{% csrf_token %}<button class="rounded-full px-1.5 text-slate-400 hover:text-red-700" aria-label="Delete saved view {{ v.name }}">×</button></form>
+    </span>
+    {% endfor %}
+  </div>
+
+  <form method="get" class="mt-4 grid gap-3 rounded-xl border border-slate-200 bg-white p-4 sm:grid-cols-2 lg:grid-cols-5">
+    {% include "partials/field.html" with field=form.q %}
+    {% include "partials/field.html" with field=form.status %}
+    {% include "partials/field.html" with field=form.direction %}
+    {% include "partials/field.html" with field=form.program %}
+    {% include "partials/field.html" with field=form.partner %}
+    {% include "partials/field.html" with field=form.priority %}
+    {% include "partials/field.html" with field=form.date_from %}
+    {% include "partials/field.html" with field=form.date_to %}
+    <div class="flex flex-col justify-end gap-2">{% include "partials/field.html" with field=form.overdue %}{% if not is_partner %}{% include "partials/field.html" with field=form.mine %}{% endif %}</div>
+    <div class="flex items-end gap-2"><button class="rounded-md bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700">Apply</button><a href="{% url 'referral-inbox' %}" class="rounded-md border border-slate-300 px-3 py-2 text-sm hover:bg-slate-50">Clear</a></div>
+  </form>
+  {% if querystring %}
+  <form method="post" action="{% url 'referral-view-save' %}" class="mt-2 flex items-center gap-2 text-sm">{% csrf_token %}
+    {% for k, val in request.GET.items %}{% if k != "page" %}<input type="hidden" name="{{ k }}" value="{{ val }}">{% endif %}{% endfor %}
+    <label for="view-name" class="text-slate-600">Save these filters as</label>
+    <input id="view-name" name="name" required maxlength="100" placeholder="e.g. My overdue food referrals" class="rounded-md border border-slate-300 px-2 py-1">
+    <button class="rounded-md border border-slate-300 bg-white px-3 py-1 hover:bg-slate-50">Save view</button>
+  </form>
+  {% endif %}
+
+  <div class="mt-4 overflow-x-auto rounded-xl border border-slate-200 bg-white">
+    <table class="min-w-full divide-y divide-slate-200 text-sm">
+      <caption class="sr-only">Referrals</caption>
+      <thead class="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
+        <tr><th scope="col" class="px-4 py-3">Referral</th><th scope="col" class="px-4 py-3">Client</th><th scope="col" class="px-4 py-3">From → To</th><th scope="col" class="px-4 py-3">Program</th><th scope="col" class="px-4 py-3">Status</th><th scope="col" class="px-4 py-3">Submitted</th><th scope="col" class="px-4 py-3">Assigned</th></tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100">
+        {% for r in referrals %}
+        <tr class="hover:bg-slate-50">
+          <td class="whitespace-nowrap px-4 py-3"><a href="{% url 'referral-detail' r.pk %}" class="font-mono font-medium text-brand-600 hover:underline">{{ r.reference_number }}</a>
+            <div class="mt-0.5 flex gap-1">{% if r.priority == "URGENT" %}<span class="rounded bg-rose-600 px-1.5 text-[11px] font-bold uppercase text-white">Urgent</span>{% elif r.priority == "HIGH" %}<span class="rounded bg-amber-500 px-1.5 text-[11px] font-bold uppercase text-white">High</span>{% endif %}{% if r.is_overdue %}<span class="rounded border border-rose-300 px-1.5 text-[11px] font-semibold text-rose-800">Overdue</span>{% endif %}</div></td>
+          <td class="px-4 py-3">{{ r.client.first_name }} {{ r.client.last_name }}</td>
+          <td class="px-4 py-3 text-slate-600">{{ r.sending_organization }} <span aria-hidden="true">→</span><span class="sr-only">to</span> {{ r.receiving_organization }}</td>
+          <td class="px-4 py-3 text-slate-600">{{ r.program }}</td>
+          <td class="px-4 py-3">{% include "partials/status_badge.html" %}</td>
+          <td class="whitespace-nowrap px-4 py-3 text-slate-500">{{ r.submitted_at|date:"M j, Y" }}<div class="text-xs">{{ r.submitted_at|timesince }} ago</div></td>
+          <td class="px-4 py-3 text-slate-600">{{ r.assigned_to|default:"—" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7" class="px-4 py-10 text-center text-slate-500">No referrals match these filters.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% include "partials/pagination.html" with is_paginated=page_obj.has_other_pages paginator=page_obj.paginator %}
+</div>
+{% endblock %}

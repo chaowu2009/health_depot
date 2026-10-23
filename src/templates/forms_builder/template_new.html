@@ -1,0 +1,13 @@
+{% extends "app_shell.html" %}
+{% block title %}New form{% endblock %}
+{% block content %}
+<div class="mx-auto max-w-2xl">
+  <a href="{% url 'form-list' %}" class="text-sm text-brand-600 hover:underline">← All forms</a>
+  <h1 class="mt-2 text-2xl font-semibold tracking-tight text-brand-900">New form</h1>
+  <form method="post" class="mt-6 space-y-4 rounded-xl border border-slate-200 bg-white p-6" novalidate>
+    {% csrf_token %}
+    {% for field in form %}{% include "partials/field.html" with field=field %}{% endfor %}
+    <button class="rounded-md bg-brand-600 px-5 py-2 text-sm font-semibold text-white hover:bg-brand-700">Create form</button>
+  </form>
+</div>
+{% endblock %}

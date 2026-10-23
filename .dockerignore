@@ -1,0 +1,15 @@
+.git
+.env
+backups
+node_modules
+staticfiles
+deploy/caddy/certs
+.venv
+**/__pycache__
+.pytest_cache
+.mypy_cache
+.ruff_cache
+src/static/css/app.css
+*.pdf
+*.md
+!README.md

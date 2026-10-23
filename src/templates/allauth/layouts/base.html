@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}{% block head_title %}{% endblock head_title %}{% endblock %}
+{% block body %}
+<main id="main" class="flex min-h-[calc(100vh-2rem)] items-start justify-center px-4 py-12 sm:items-center">
+  <div class="w-full max-w-md">
+    <div class="mb-8 flex items-center justify-center gap-2">
+      <span class="grid h-10 w-10 place-items-center rounded-lg bg-brand-600 font-bold text-white" aria-hidden="true">HD</span>
+      <span class="text-2xl font-semibold tracking-tight text-brand-900">{{ APP_NAME }}</span>
+    </div>
+    <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+      {% include "partials/messages.html" %}
+      <div class="space-y-5">
+        {% block content %}{% endblock content %}
+      </div>
+    </div>
+    {% if user.is_authenticated %}
+    <p class="mt-6 text-center text-sm text-slate-500">
+      Signed in as {{ user.email }} ·
+      <a class="font-medium text-brand-600 underline-offset-2 hover:underline" href="{% url 'home' %}">Back to {{ APP_NAME }}</a>
+    </p>
+    {% endif %}
+    <p class="mt-4 text-center text-xs text-slate-400">Authorized users only. Activity is logged.</p>
+  </div>
+</main>
+{% block extra_body %}{% endblock extra_body %}
+{% endblock %}

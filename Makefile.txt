@@ -1,0 +1,111 @@
+# Health Depot — common commands. On Windows without make, use: .\tasks.ps1 <command>
+# Dev stack by default; add STACK=prod to target the production-like stack (e.g., make backup STACK=prod).
+
+STACK ?= dev
+ifeq ($(STACK),prod)
+COMPOSE := docker compose -f compose.prod.yaml
+APP_SVC := web
+else
+COMPOSE := docker compose -f compose.yaml
+APP_SVC := web
+endif
+TS := $(shell date +%Y%m%d-%H%M%S)
+DEV := docker compose -f compose.yaml run --rm --no-deps web
+
+.PHONY: help env certs build up up-prod down down-prod logs ps migrate shell manage superuser test lint fmt backup restore check seed-demo reset-demo security scan build-multiarch check-stack
+
+help:  ## Show commands
+	@grep -E '^[a-zA-Z_-]+:.*?## ' Makefile | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-12s %s\n", $$1, $$2}'
+
+env:  ## Create .env from .env.example with a random secret key
+	@test -f .env || (cp .env.example .env && \
+	  python3 -c "import secrets,re,pathlib;p=pathlib.Path('.env');p.write_text(p.read_text().replace('DJANGO_SECRET_KEY=change-me','DJANGO_SECRET_KEY='+secrets.token_urlsafe(50)))" && \
+	  echo "Created .env")
+
+certs:  ## Create trusted local HTTPS certificates with mkcert, then set CADDY_TLS in .env
+	mkcert -install
+	mkcert -cert-file deploy/caddy/certs/localhost.pem -key-file deploy/caddy/certs/localhost-key.pem localhost demo.local 127.0.0.1
+	@echo 'Now set in .env:  CADDY_TLS=/certs/localhost.pem /certs/localhost-key.pem'
+
+build: env  ## Build images
+	$(COMPOSE) build
+
+up: env  ## Start the development stack (https://localhost)
+	docker compose -f compose.yaml up -d --build
+	@echo "App:   https://localhost"
+	@echo "Email: http://localhost:8025"
+
+up-prod: env  ## Start the production-like stack
+	docker compose -f compose.prod.yaml up -d --build
+	@echo "App:   https://localhost"
+
+down:  ## Stop the development stack
+	docker compose -f compose.yaml down
+
+down-prod:  ## Stop the production-like stack
+	docker compose -f compose.prod.yaml down
+
+logs:  ## Follow logs (all services)
+	$(COMPOSE) logs -f --tail=100
+
+ps:  ## Show container status
+	$(COMPOSE) ps
+
+migrate:  ## Run database migrations
+	$(COMPOSE) run --rm migrate
+
+shell:  ## Django shell
+	$(COMPOSE) exec $(APP_SVC) python /app/src/manage.py shell
+
+manage:  ## Run a manage.py command: make manage CMD="showmigrations"
+	$(COMPOSE) exec $(APP_SVC) python /app/src/manage.py $(CMD)
+
+superuser:  ## Create a system administrator account
+	$(COMPOSE) exec $(APP_SVC) python /app/src/manage.py createsuperuser
+
+seed-demo:  ## Load synthetic demo data (first time)
+	$(COMPOSE) exec $(APP_SVC) python /app/src/manage.py seed_demo
+
+reset-demo:  ## Wipe and rebuild synthetic demo data (DEMO_MODE=true only)
+	$(COMPOSE) exec $(APP_SVC) python /app/src/manage.py seed_demo --reset
+
+test:  ## Run the test suite (in Docker)
+	docker compose -f compose.yaml up -d db s3
+	$(DEV) pytest
+
+lint:  ## Lint, format check and type check (in Docker)
+	$(DEV) sh -c "ruff check . && ruff format --check . && mypy src"
+
+fmt:  ## Auto-format code
+	$(DEV) sh -c "ruff check --fix . && ruff format ."
+
+security:  ## Security scans: bandit (code) and pip-audit (dependencies)
+	$(DEV) sh -c "bandit -q -r src scripts -x '*/migrations/*,*/tests/*' -c pyproject.toml && pip-audit --local --strict"
+
+scan:  ## Container scan (Trivy) and SBOM (Syft) for the production image
+	docker compose -f compose.prod.yaml build web
+	docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:0.67.2 image --scanners vuln,secret --severity HIGH,CRITICAL --ignore-unfixed health-depot:latest
+	mkdir -p security
+	docker run --rm -v /var/run/docker.sock:/var/run/docker.sock anchore/syft:v1.33.0 health-depot:latest -o spdx-json > security/sbom-health-depot.spdx.json
+
+build-multiarch:  ## Build the production image for amd64 and arm64 (needs Docker Buildx)
+	docker buildx build --platform linux/amd64,linux/arm64 --target runtime -t health-depot:multiarch .
+
+check-stack:  ## Verify the running stack: containers, database, demo data, email, logins
+	$(COMPOSE) ps
+	$(COMPOSE) exec $(APP_SVC) python /app/src/manage.py stack_check
+
+check:  ## Django deployment checks with production settings
+	$(DEV) sh -c "cd src && DEBUG=false python manage.py check --deploy"
+
+backup:  ## Back up database and file storage into ./backups/<timestamp>/
+	mkdir -p backups/$(TS)
+	$(COMPOSE) exec -T db sh -c 'pg_dump -U "$$POSTGRES_USER" -d "$$POSTGRES_DB" --clean --if-exists' | gzip > backups/$(TS)/db.sql.gz
+	$(COMPOSE) run --rm --no-deps --user "$$(id -u):$$(id -g)" -v "$(CURDIR)/backups:/backups" --entrypoint python $(APP_SVC) /app/src/manage.py backup_storage /backups/$(TS)/storage
+	@echo "Backup written to backups/$(TS)"
+
+restore:  ## Restore from a backup: make restore BACKUP=backups/20261018-120000
+	@test -n "$(BACKUP)" || (echo "Usage: make restore BACKUP=backups/<timestamp>" && exit 1)
+	gunzip -c $(BACKUP)/db.sql.gz | $(COMPOSE) exec -T db sh -c 'psql -q -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"'
+	$(COMPOSE) run --rm --no-deps --user "$$(id -u):$$(id -g)" -v "$(CURDIR)/backups:/backups" --entrypoint python $(APP_SVC) /app/src/manage.py restore_storage /$(BACKUP)/storage
+	@echo "Restored from $(BACKUP)"

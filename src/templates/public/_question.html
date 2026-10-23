@@ -1,0 +1,24 @@
+{% load ui %}
+{# One template question. wrapper carries show-if data for static/js/app.js #}
+<div data-question {% with attrs=field.field.widget.attrs %}{% if attrs|get:"data-show-if-field" %}data-show-if-field="{{ attrs|get:'data-show-if-field' }}" data-show-if-equals="{{ attrs|get:'data-show-if-equals' }}"{% endif %}{% endwith %} class="space-y-2">
+  {% if field|is_multi %}
+  <fieldset>
+    <legend class="text-sm font-medium text-slate-800">{{ field.label }}{% if field.field.widget.attrs|get:"data-required" == "true" %} <span class="text-red-700" aria-hidden="true">*</span><span class="sr-only">({{ t.required }})</span>{% endif %}</legend>
+    {% if field.help_text %}<p class="text-xs text-slate-500">{{ field.help_text }}</p>{% endif %}
+    <div class="mt-2 space-y-2">
+      {% for choice in field %}
+      <label class="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-200 px-3 py-2.5 text-sm hover:border-slate-300 has-[:checked]:border-[var(--brand)] has-[:checked]:bg-slate-50">
+        {{ choice.tag }}<span>{{ choice.choice_label }}</span>
+      </label>
+      {% endfor %}
+    </div>
+  </fieldset>
+  {% elif field|is_checkbox %}
+  <label class="flex items-start gap-3 text-sm text-slate-800">{{ field }}<span>{{ field.label }}{% if field.field.widget.attrs|get:"data-required" == "true" %} <span class="text-red-700" aria-hidden="true">*</span>{% endif %}</span></label>
+  {% else %}
+  <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-slate-800">{{ field.label }}{% if field.field.widget.attrs|get:"data-required" == "true" %} <span class="text-red-700" aria-hidden="true">*</span>{% endif %}</label>
+  {% if field.help_text %}<p class="text-xs text-slate-500">{{ field.help_text }}</p>{% endif %}
+  {{ field|styled }}
+  {% endif %}
+  {% if field.errors %}<p class="text-sm text-red-700" role="alert">{{ field.errors|join:" " }}</p>{% endif %}
+</div>

@@ -1,0 +1,77 @@
+{% extends "app_shell.html" %}
+{% block title %}{{ partner.name }}{% endblock %}
+{% block content %}
+<div class="mx-auto max-w-6xl">
+  {% if user.role != "PARTNER_USER" %}<a href="{% url 'partner-list' %}" class="text-sm text-brand-600 hover:underline">← All partners</a>{% endif %}
+  <div class="mt-2 flex flex-wrap items-center justify-between gap-4">
+    <div class="flex items-center gap-4">
+      {% if partner.logo_url %}<img src="{{ partner.logo_url }}" alt="{{ partner.name }} logo" class="h-14 w-14 rounded-lg border border-slate-200 bg-white object-contain p-1">
+      {% else %}<span class="grid h-14 w-14 place-items-center rounded-lg text-lg font-bold text-white" style="background-color: {{ partner.brand_color }}" aria-hidden="true">{{ partner.name|slice:":2"|upper }}</span>{% endif %}
+      <div>
+        <h1 class="text-2xl font-semibold tracking-tight text-brand-900">{{ partner.name }}</h1>
+        <p class="text-sm text-slate-500">{% if partner.is_active %}Active partner{% else %}Inactive{% endif %}{% if partner.service_area_zips %} · Serves {{ partner.service_area_zips|join:", " }}{% endif %}</p>
+      </div>
+    </div>
+    {% if can_manage %}<a href="{% url 'partner-edit' partner.pk %}" class="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium hover:bg-slate-50">Edit partner</a>{% endif %}
+  </div>
+
+  <div class="mt-6 grid gap-6 lg:grid-cols-3">
+    <section class="rounded-xl border border-slate-200 bg-white p-5">
+      <h2 class="text-base font-semibold text-brand-900">Contact</h2>
+      <dl class="mt-3 space-y-2 text-sm">
+        <div><dt class="text-slate-500">Contact</dt><dd>{{ partner.contact_name|default:"—" }}</dd></div>
+        <div><dt class="text-slate-500">Email</dt><dd>{{ partner.contact_email|default:"—" }}</dd></div>
+        <div><dt class="text-slate-500">Phone</dt><dd>{{ partner.contact_phone|default:"—" }}</dd></div>
+        <div><dt class="text-slate-500">Address</dt><dd>{{ partner.address|default:"—" }}</dd></div>
+      </dl>
+      {% if partner.service_types %}<h3 class="mt-4 text-sm font-medium text-slate-700">Services</h3><div class="mt-2 flex flex-wrap gap-1.5">{% for s in partner.service_type_labels %}<span class="rounded-full bg-brand-50 px-2 py-0.5 text-xs text-brand-700">{{ s }}</span>{% endfor %}</div>{% endif %}
+      {% if programs %}<h3 class="mt-4 text-sm font-medium text-slate-700">Programs</h3><ul class="mt-1 text-sm text-slate-600">{% for p in programs %}<li>{{ p }}</li>{% endfor %}</ul>{% endif %}
+    </section>
+
+    <section class="rounded-xl border border-slate-200 bg-white p-5 lg:col-span-2">
+      <h2 class="text-base font-semibold text-brand-900">Referral links</h2>
+      <p class="mt-1 text-sm text-slate-600">Share a link or print its QR code. Each link is tracked separately.</p>
+      <ul class="mt-4 space-y-3">
+        {% for link in links %}
+        <li class="rounded-lg border border-slate-200 p-4 {% if not link.is_active %}opacity-60{% endif %}">
+          <div class="flex flex-wrap items-start justify-between gap-3">
+            <div class="min-w-0">
+              <p class="font-medium text-brand-900">{{ link.label }} {% if not link.is_active %}<span class="ml-1 rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600">Inactive</span>{% endif %}</p>
+              <p class="text-xs text-slate-500">{{ link.program }} · Form: {{ link.form_template.name }}</p>
+              <p class="mt-2 break-all font-mono text-xs"><a class="text-brand-600 hover:underline" href="{{ link.public_url }}" target="_blank" rel="noopener">{{ link.public_url }}</a></p>
+            </div>
+            <div class="flex items-center gap-4 text-center text-xs text-slate-500">
+              <div><p class="text-lg font-semibold text-brand-900">{{ link.visit_count }}</p>visits</div>
+              <div><p class="text-lg font-semibold text-brand-900">{{ link.submission_count }}</p>referrals</div>
+            </div>
+          </div>
+          <div class="mt-3 flex flex-wrap gap-2">
+            <a href="{% url 'link-qr' link.pk %}?download=1" class="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium hover:bg-slate-50">Download QR code</a>
+            <a href="{% url 'link-qr' link.pk %}" target="_blank" rel="noopener" class="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium hover:bg-slate-50">View QR</a>
+            {% if link.can_edit %}
+            <form method="post" action="{% url 'link-toggle' link.pk %}">{% csrf_token %}<button class="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium hover:bg-slate-50">{% if link.is_active %}Deactivate{% else %}Activate{% endif %}</button></form>
+            {% endif %}
+          </div>
+        </li>
+        {% empty %}
+        <li class="rounded-lg border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500">No referral links yet.</li>
+        {% endfor %}
+      </ul>
+
+      {% if link_form %}
+      <details class="mt-6 rounded-lg border border-slate-200 bg-slate-50 p-4" {% if not links %}open{% endif %}>
+        <summary class="cursor-pointer text-sm font-semibold text-brand-900">Create a referral link</summary>
+        <form method="post" action="{% url 'partner-link-create' partner.pk %}" class="mt-4 grid gap-4 sm:grid-cols-2">
+          {% csrf_token %}
+          <div class="sm:col-span-2">{% include "partials/field.html" with field=link_form.label %}</div>
+          {% include "partials/field.html" with field=link_form.program %}
+          {% include "partials/field.html" with field=link_form.form_template %}
+          {% include "partials/field.html" with field=link_form.expires_at %}
+          <div class="flex items-end"><button class="rounded-md bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700">Create link</button></div>
+        </form>
+      </details>
+      {% endif %}
+    </section>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,34 @@
+{% extends "app_shell.html" %}
+{% block title %}EHR integration{% endblock %}
+{% block content %}
+<div class="mx-auto max-w-6xl">
+  {% include "phase2/_header.html" with title="EHR integration" subtitle="Two-way sync with the clinical EHR through secure middleware, so staff never enter data twice." %}
+  <div class="mt-6 grid gap-6 lg:grid-cols-3">
+    <section class="rounded-xl border border-slate-200 bg-white p-5">
+      <h2 class="text-base font-semibold text-brand-900">Connection</h2>
+      <dl class="mt-3 space-y-2 text-sm">
+        <div class="flex justify-between"><dt class="text-slate-500">Status</dt><dd class="font-semibold text-emerald-700">● Connected</dd></div>
+        <div class="flex justify-between"><dt class="text-slate-500">Standard</dt><dd>HL7 v2.5.1 + FHIR R4</dd></div>
+        <div class="flex justify-between"><dt class="text-slate-500">Middleware</dt><dd>Integration engine (TLS 1.2+, mutual auth)</dd></div>
+        <div class="flex justify-between"><dt class="text-slate-500">Last sync</dt><dd>{{ last_sync|timesince }} ago</dd></div>
+        <div class="flex justify-between"><dt class="text-slate-500">Patient matching</dt><dd>Name + DOB + phone, review queue</dd></div>
+      </dl>
+      <button type="button" class="mt-4 w-full rounded-md border border-slate-300 px-4 py-2 text-sm font-medium hover:bg-slate-50">Test connection (preview)</button>
+    </section>
+    <section class="overflow-x-auto rounded-xl border border-slate-200 bg-white p-5 lg:col-span-2">
+      <h2 class="text-base font-semibold text-brand-900">Field mapping</h2>
+      <table class="mt-3 min-w-full text-sm"><caption class="sr-only">Field mapping</caption>
+        <thead class="text-left text-xs uppercase tracking-wider text-slate-500"><tr><th scope="col" class="py-2 pr-3">Health Depot</th><th scope="col" class="py-2 pr-3">HL7 v2</th><th scope="col" class="py-2 pr-3">FHIR R4</th><th scope="col" class="py-2">Direction</th></tr></thead>
+        <tbody class="divide-y divide-slate-100">{% for hd, hl7, fhir, d in mapping %}<tr><td class="py-1.5 pr-3 font-medium">{{ hd }}</td><td class="py-1.5 pr-3 font-mono text-xs">{{ hl7 }}</td><td class="py-1.5 pr-3 font-mono text-xs">{{ fhir }}</td><td class="py-1.5 text-xs">{{ d }}</td></tr>{% endfor %}</tbody>
+      </table>
+    </section>
+  </div>
+  <section class="mt-6 overflow-x-auto rounded-xl border border-slate-200 bg-white p-5">
+    <h2 class="text-base font-semibold text-brand-900">Sync log</h2>
+    <table class="mt-3 min-w-full text-sm"><caption class="sr-only">Sync log</caption>
+      <thead class="text-left text-xs uppercase tracking-wider text-slate-500"><tr><th scope="col" class="py-2 pr-3">Time</th><th scope="col" class="py-2 pr-3">Event</th><th scope="col" class="py-2">Result</th></tr></thead>
+      <tbody class="divide-y divide-slate-100">{% for row in log %}<tr><td class="py-1.5 pr-3 text-slate-500">{{ row.at|date:"M j g:i a" }}</td><td class="py-1.5 pr-3">{{ row.event }}</td><td class="py-1.5 {% if row.ok %}text-emerald-700{% else %}text-amber-700{% endif %}">{% if row.ok %}✓{% else %}↻{% endif %} {{ row.detail }}</td></tr>{% endfor %}</tbody>
+    </table>
+  </section>
+</div>
+{% endblock %}

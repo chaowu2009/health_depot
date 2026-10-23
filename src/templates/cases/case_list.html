@@ -1,0 +1,42 @@
+{% extends "app_shell.html" %}
+{% block title %}Cases{% endblock %}
+{% block content %}
+<div class="mx-auto max-w-6xl">
+  <div class="flex flex-wrap items-end justify-between gap-4">
+    <div><h1 class="text-2xl font-semibold tracking-tight text-brand-900">Cases</h1>
+      <p class="mt-1 text-sm text-slate-600">Case management from admission to discharge.</p></div>
+    <a href="{% url 'case-create' %}" class="rounded-md bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700">Open a case</a>
+  </div>
+  <form method="get" class="mt-5 flex flex-wrap items-end gap-3">
+    <div><label for="q" class="block text-xs font-medium text-slate-600">Search</label><input id="q" name="q" value="{{ q }}" placeholder="Case # or client" class="mt-1 rounded-md border border-slate-300 px-3 py-2 text-sm"></div>
+    <div><label for="status" class="block text-xs font-medium text-slate-600">Status</label>
+      <select id="status" name="status" class="mt-1 rounded-md border border-slate-300 px-3 py-2 text-sm" data-autosubmit>
+        <option value="active" {% if status == "active" %}selected{% endif %}>Not discharged</option>
+        <option value="all" {% if status == "all" %}selected{% endif %}>All</option>
+        {% for v, l in statuses %}<option value="{{ v }}" {% if status == v %}selected{% endif %}>{{ l }}</option>{% endfor %}
+      </select></div>
+    <label class="flex items-center gap-2 pb-2 text-sm"><input type="checkbox" name="mine" {% if request.GET.mine %}checked{% endif %} data-autosubmit class="h-4 w-4 rounded border-slate-300"> My cases</label>
+    <button class="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium hover:bg-slate-50">Filter</button>
+  </form>
+  <div class="mt-4 overflow-x-auto rounded-xl border border-slate-200 bg-white">
+    <table class="min-w-full divide-y divide-slate-200 text-sm">
+      <caption class="sr-only">Cases</caption>
+      <thead class="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wider text-slate-500"><tr><th scope="col" class="px-4 py-3">Case</th><th scope="col" class="px-4 py-3">Client</th><th scope="col" class="px-4 py-3">Program</th><th scope="col" class="px-4 py-3">Case manager</th><th scope="col" class="px-4 py-3">Status</th><th scope="col" class="px-4 py-3">Open tasks</th><th scope="col" class="px-4 py-3">Admitted</th></tr></thead>
+      <tbody class="divide-y divide-slate-100">
+        {% for c in cases %}
+        <tr class="hover:bg-slate-50">
+          <td class="px-4 py-3"><a href="{% url 'case-detail' c.pk %}" class="font-mono font-medium text-brand-600 hover:underline">{{ c.case_number }}</a></td>
+          <td class="px-4 py-3">{{ c.client.first_name }} {{ c.client.last_name }}</td>
+          <td class="px-4 py-3 text-slate-600">{{ c.program }}</td>
+          <td class="px-4 py-3 text-slate-600">{{ c.case_manager|default:"—" }}</td>
+          <td class="px-4 py-3"><span class="rounded-full px-2.5 py-0.5 text-xs font-semibold {% if c.status == 'DISCHARGED' %}bg-slate-200 text-slate-700{% elif c.status == 'ON_HOLD' %}bg-amber-100 text-amber-900{% else %}bg-teal-100 text-teal-900{% endif %}">{{ c.get_status_display }}</span></td>
+          <td class="px-4 py-3">{{ c.open_tasks }}</td>
+          <td class="px-4 py-3 text-slate-500">{{ c.admitted_at|date:"M j, Y" }}</td>
+        </tr>
+        {% empty %}<tr><td colspan="7" class="px-4 py-10 text-center text-slate-500">No cases.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% include "partials/pagination.html" with is_paginated=page_obj.has_other_pages paginator=page_obj.paginator %}
+</div>
+{% endblock %}

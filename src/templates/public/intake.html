@@ -1,0 +1,9 @@
+{% extends "public/_layout.html" %}
+{% block title %}{{ partner.name }}{% endblock %}
+{% block public_content %}
+<form method="post" novalidate data-conditional data-prefix="q">
+  {% csrf_token %}
+  <input type="hidden" name="lang" value="{{ lang }}">
+  {% include "public/_form_body.html" %}
+</form>
+{% endblock %}

@@ -1,0 +1,35 @@
+{% extends "app_shell.html" %}
+{% block title %}New referral{% endblock %}
+{% block content %}
+<div class="mx-auto max-w-3xl">
+  <a href="/referrals/" class="text-sm text-brand-600 hover:underline">← Referrals</a>
+  <h1 class="mt-2 text-2xl font-semibold tracking-tight text-brand-900">Refer a client to a partner</h1>
+  <form method="post" class="mt-6 space-y-6" novalidate>
+    {% csrf_token %}
+    <section class="rounded-xl border border-slate-200 bg-white p-6">
+      <h2 class="text-base font-semibold text-brand-900">Client</h2>
+      <div class="mt-4">{% include "partials/field.html" with field=form.client %}</div>
+      <p class="mt-4 text-xs font-medium uppercase tracking-wider text-slate-500">New client</p>
+      <div class="mt-2 grid gap-4 sm:grid-cols-2">
+        {% include "partials/field.html" with field=form.first_name %}
+        {% include "partials/field.html" with field=form.last_name %}
+        {% include "partials/field.html" with field=form.date_of_birth %}
+        {% include "partials/field.html" with field=form.phone %}
+      </div>
+    </section>
+    <section class="rounded-xl border border-slate-200 bg-white p-6">
+      <h2 class="text-base font-semibold text-brand-900">Referral</h2>
+      <div class="mt-4 grid gap-4 sm:grid-cols-2">
+        {% include "partials/field.html" with field=form.program %}
+        {% include "partials/field.html" with field=form.partner %}
+        {% include "partials/field.html" with field=form.priority %}
+      </div>
+      <fieldset class="mt-4"><legend class="text-sm font-medium text-slate-700">Needs</legend>
+        <div class="mt-2 grid gap-2 sm:grid-cols-4">{% for cb in form.needs %}<label class="flex items-center gap-2 text-sm">{{ cb.tag }} {{ cb.choice_label }}</label>{% endfor %}</div>
+      </fieldset>
+      <div class="mt-4">{% include "partials/field.html" with field=form.reason %}</div>
+    </section>
+    <button class="rounded-md bg-brand-600 px-5 py-2 text-sm font-semibold text-white hover:bg-brand-700">Send referral</button>
+  </form>
+</div>
+{% endblock %}

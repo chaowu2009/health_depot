@@ -1,0 +1,43 @@
+{% extends "app_shell.html" %}
+{% load ui %}
+{% block title %}Audit log{% endblock %}
+{% block content %}
+<div class="mx-auto max-w-6xl">
+  <h1 class="text-2xl font-semibold tracking-tight text-brand-900">Administration</h1>
+  <p class="mt-1 text-sm text-slate-600">Every sign-in, permission change, and view, change or export of client records. Entries can't be edited or deleted.</p>
+  {% include "accounts/manage/_tabs.html" %}
+
+  <form method="get" class="mt-6 grid gap-3 sm:grid-cols-3 lg:grid-cols-6 lg:items-end">
+    {% include "partials/field.html" with field=filter_form.action %}
+    {% include "partials/field.html" with field=filter_form.entity_type %}
+    {% include "partials/field.html" with field=filter_form.actor %}
+    {% include "partials/field.html" with field=filter_form.date_from %}
+    {% include "partials/field.html" with field=filter_form.date_to %}
+    <button class="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium hover:bg-slate-50">Filter</button>
+  </form>
+
+  <div class="mt-4 overflow-x-auto rounded-xl border border-slate-200 bg-white">
+    <table class="min-w-full divide-y divide-slate-200 text-sm">
+      <caption class="sr-only">Audit log entries</caption>
+      <thead class="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
+        <tr><th scope="col" class="px-4 py-3">When</th><th scope="col" class="px-4 py-3">User</th><th scope="col" class="px-4 py-3">Action</th><th scope="col" class="px-4 py-3">Record</th><th scope="col" class="px-4 py-3">Details</th><th scope="col" class="px-4 py-3">IP address</th></tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100">
+        {% for e in entries %}
+        <tr>
+          <td class="whitespace-nowrap px-4 py-2.5 text-slate-600">{{ e.occurred_at|date:"M j, Y g:i:s a" }}</td>
+          <td class="px-4 py-2.5">{{ e.actor.email|default:"—" }}</td>
+          <td class="px-4 py-2.5"><span class="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-700">{{ e.get_action_display }}</span></td>
+          <td class="px-4 py-2.5">{{ e.entity_type|default:"—" }}<div class="font-mono text-xs text-slate-400">{{ e.entity_id|truncatechars:14 }}</div></td>
+          <td class="max-w-xs px-4 py-2.5 text-xs text-slate-600">{{ e.changes|details }}</td>
+          <td class="px-4 py-2.5 font-mono text-xs text-slate-500">{{ e.actor_ip|default:"" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" class="px-4 py-8 text-center text-slate-500">No audit entries match.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% include "partials/pagination.html" %}
+</div>
+{% endblock %}

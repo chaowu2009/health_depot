@@ -1,0 +1,6 @@
+<details class="mt-2 text-sm"><summary class="cursor-pointer text-xs font-medium text-brand-600">View as table</summary>
+  <table class="mt-2 w-full text-left text-xs"><caption class="sr-only">{{ caption }}</caption>
+    <thead><tr class="text-slate-500"><th scope="col" class="py-1 font-medium">{{ col1|default:"Category" }}</th><th scope="col" class="py-1 text-right font-medium">{{ col2|default:"Count" }}</th></tr></thead>
+    <tbody class="divide-y divide-slate-100">{% for k, v in pairs %}<tr><td class="py-1">{{ k }}</td><td class="py-1 text-right tabular-nums">{{ v }}{{ suffix }}</td></tr>{% empty %}<tr><td colspan="2" class="py-1 text-slate-500">No data</td></tr>{% endfor %}</tbody>
+  </table>
+</details>

@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block body %}
+<div class="flex min-h-full" x-data="{ navOpen: false }">
+  {# Left navigation #}
+  <aside class="fixed inset-y-0 left-0 z-30 w-64 -translate-x-full transform bg-brand-900 text-brand-50 transition md:static md:translate-x-0"
+         :class="navOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'" aria-label="Main navigation">
+    <div class="flex h-16 items-center gap-2 px-5">
+      <span class="grid h-8 w-8 place-items-center rounded-lg bg-accent-500 font-bold text-white" aria-hidden="true">HD</span>
+      <span class="text-lg font-semibold tracking-tight">{{ APP_NAME }}</span>
+    </div>
+    <nav class="space-y-6 px-3 pb-6">
+      <ul class="space-y-1">
+        {% for item in main_nav %}
+        <li>
+          <a href="/{{ item.slug }}/"
+             class="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium {% if active == item.slug %}bg-brand-700 text-white{% else %}text-brand-100 hover:bg-brand-700/60 hover:text-white{% endif %}"
+             {% if active == item.slug %}aria-current="page"{% endif %}>
+            {% include "partials/icon.html" with name=item.icon %}{{ item.label }}
+          </a>
+        </li>
+        {% endfor %}
+        {% if user.is_superuser or user.is_system_admin %}
+        <li>
+          <a href="{% url 'manage-user-list' %}"
+             class="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium {% if active == 'manage' %}bg-brand-700 text-white{% else %}text-brand-100 hover:bg-brand-700/60 hover:text-white{% endif %}"
+             {% if active == 'manage' %}aria-current="page"{% endif %}>
+            {% include "partials/icon.html" with name="shield" %}Users &amp; access
+          </a>
+        </li>
+        <li>
+          <a href="{% url 'manage-audit-log' %}"
+             class="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium {% if active == 'audit' %}bg-brand-700 text-white{% else %}text-brand-100 hover:bg-brand-700/60 hover:text-white{% endif %}"
+             {% if active == 'audit' %}aria-current="page"{% endif %}>
+            {% include "partials/icon.html" with name="table" %}Audit log
+          </a>
+        </li>
+        {% endif %}
+      </ul>
+      <div>
+        {% if phase2_nav %}<p class="px-3 pb-2 text-xs font-semibold uppercase tracking-wider text-brand-100/70">Phase 2 — Preview</p>{% endif %}
+        <ul class="space-y-1">
+          {% for item in phase2_nav %}
+          <li>
+            <a href="/{{ item.slug }}/"
+               class="flex items-center gap-3 rounded-md px-3 py-2 text-sm {% if active == item.slug %}bg-brand-700 text-white{% else %}text-brand-100 hover:bg-brand-700/60 hover:text-white{% endif %}"
+               {% if active == item.slug %}aria-current="page"{% endif %}>
+              {% include "partials/icon.html" with name=item.icon %}{{ item.label }}
+            </a>
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+    </nav>
+  </aside>
+
+  <div class="flex min-w-0 flex-1 flex-col">
+    {# Top bar #}
+    <header class="sticky top-0 z-20 flex h-16 items-center gap-4 border-b border-slate-200 bg-white px-4 md:px-8">
+      <button type="button" class="rounded-md p-2 text-slate-600 hover:bg-slate-100 md:hidden" @click="navOpen = !navOpen" :aria-expanded="navOpen" aria-label="Toggle navigation">
+        <svg aria-hidden="true" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
+      <p class="text-sm text-slate-500">Calvert County Health Department</p>
+      <div class="ml-auto flex items-center gap-3">
+        <a href="{% url 'notification-list' %}" class="relative rounded-full p-2 text-slate-500 hover:bg-slate-100" title="Notifications">
+          {% include "partials/icon.html" with name="bell" %}<span class="sr-only">Notifications{% if unread_notifications %}: {{ unread_notifications }} unread{% endif %}</span>
+          {% if unread_notifications %}<span class="absolute -right-0.5 -top-0.5 grid h-5 min-w-5 place-items-center rounded-full bg-rose-600 px-1 text-[11px] font-bold text-white" aria-hidden="true">{{ unread_notifications|stringformat:"d" }}</span>{% endif %}
+        </a>
+        <div class="relative" x-data="{ open: false }" @keydown.escape="open = false">
+          <button type="button" class="flex items-center gap-2 rounded-full border border-slate-200 py-1 pl-1 pr-3 text-sm hover:bg-slate-50" @click="open = !open" :aria-expanded="open" aria-haspopup="menu">
+            <span class="grid h-7 w-7 place-items-center rounded-full bg-brand-600 text-xs font-semibold text-white" aria-hidden="true">{{ user.email|first|upper }}</span>
+            <span class="hidden sm:inline">{{ user }}</span>
+          </button>
+          <div x-show="open" x-cloak @click.outside="open = false" class="absolute right-0 mt-2 w-56 rounded-md border border-slate-200 bg-white py-1 shadow-lg" role="menu">
+            <p class="px-4 py-2 text-xs text-slate-500">{{ user.get_role_display }}{% if user.organization %} · {{ user.organization }}{% endif %}</p>
+            <a href="{% url 'mfa_index' %}" class="block px-4 py-2 text-sm hover:bg-slate-50" role="menuitem">Two-factor settings</a>
+            <a href="{% url 'account_change_password' %}" class="block px-4 py-2 text-sm hover:bg-slate-50" role="menuitem">Change password</a>
+            <form method="post" action="{% url 'account_logout' %}">{% csrf_token %}
+              <button type="submit" class="block w-full px-4 py-2 text-left text-sm hover:bg-slate-50" role="menuitem">Sign out</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </header>
+    <main id="main" class="flex-1 px-4 py-8 md:px-8">
+      <div class="mx-auto mb-4 max-w-6xl">{% include "partials/messages.html" %}</div>
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+</div>
+{% endblock %}

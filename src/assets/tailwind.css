@@ -1,0 +1,23 @@
+@import "tailwindcss";
+
+/* Scan Django templates for class names. */
+@source "../templates";
+@source "../apps";
+
+@theme {
+  --color-brand-50: #eef6fb;
+  --color-brand-100: #d6e8f4;
+  --color-brand-600: #0f4c81;  /* navy */
+  --color-brand-700: #0b3a63;
+  --color-brand-900: #082a47;
+  --color-accent-500: #12827a; /* teal */
+  --color-accent-600: #0e6b64;
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
+    Arial, sans-serif; /* system fonts only — no external font downloads */
+}
+
+@layer base {
+  html { @apply bg-slate-50 text-slate-900 antialiased; }
+  :focus-visible { @apply outline-2 outline-offset-2 outline-accent-500; }
+}
+[x-cloak]{display:none!important}

@@ -1,0 +1,160 @@
+{% extends "app_shell.html" %}
+{% block title %}Referral {{ referral.reference_number }}{% endblock %}
+{% block content %}
+{% with r=referral %}
+<div class="mx-auto max-w-7xl">
+  <a href="{% url 'referral-inbox' %}" class="text-sm text-brand-600 hover:underline">← Referrals</a>
+  <div class="mt-2 flex flex-wrap items-start justify-between gap-4">
+    <div>
+      <div class="flex flex-wrap items-center gap-2">
+        <h1 class="font-mono text-2xl font-semibold tracking-tight text-brand-900">{{ r.reference_number }}</h1>
+        {% include "partials/status_badge.html" %}
+        {% if r.priority == "URGENT" %}<span class="rounded bg-rose-600 px-2 py-0.5 text-xs font-bold uppercase text-white">Urgent</span>{% elif r.priority == "HIGH" %}<span class="rounded bg-amber-500 px-2 py-0.5 text-xs font-bold uppercase text-white">High priority</span>{% endif %}
+        {% if r.is_overdue %}<span class="rounded border border-rose-300 bg-rose-50 px-2 py-0.5 text-xs font-semibold text-rose-800">Overdue</span>{% endif %}
+      </div>
+      <p class="mt-1 text-sm text-slate-600"><strong class="font-medium text-slate-800">{{ r.sending_organization }}</strong> <span aria-hidden="true">→</span><span class="sr-only">referred to</span> <strong class="font-medium text-slate-800">{{ r.receiving_organization }}</strong> · {{ r.program }} · Submitted {{ r.submitted_at|date:"M j, Y g:i a" }}{% if r.source_link %} via “{{ r.source_link.label }}”{% endif %}</p>
+    </div>
+    <div class="flex flex-wrap gap-2">
+      {% if r.case %}<a href="{% url 'case-detail' r.case.pk %}" class="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium hover:bg-slate-50">Open case {{ r.case.case_number }}</a>{% endif %}
+      {% if can_open_case %}<form method="post" action="{% url 'case-from-referral' r.pk %}">{% csrf_token %}<button class="rounded-md bg-accent-600 px-4 py-2 text-sm font-semibold text-white hover:bg-accent-500">Open a case</button></form>{% endif %}
+    </div>
+  </div>
+
+  <div class="mt-6 grid gap-6 lg:grid-cols-3">
+    <div class="space-y-6 lg:col-span-2">
+      <section class="rounded-xl border border-slate-200 bg-white p-5" aria-labelledby="client-h">
+        <div class="flex items-center justify-between">
+          <h2 id="client-h" class="text-base font-semibold text-brand-900">Client</h2>
+          {% if not is_partner %}<a href="{% url 'client-detail' client.pk %}" class="text-sm text-brand-600 hover:underline">Client profile →</a>{% endif %}
+        </div>
+        <dl class="mt-3 grid gap-x-6 gap-y-3 text-sm sm:grid-cols-3">
+          <div><dt class="text-slate-500">Name</dt><dd class="font-medium">{{ client.first_name }} {{ client.last_name }}</dd></div>
+          {% if not is_partner %}<div><dt class="text-slate-500">Date of birth</dt><dd>{{ client.date_of_birth|date:"M j, Y" }}</dd></div>{% endif %}
+          <div><dt class="text-slate-500">Phone</dt><dd>{{ client.phone|default:"—" }}</dd></div>
+          <div><dt class="text-slate-500">Email</dt><dd class="break-all">{{ client.email|default:"—" }}</dd></div>
+          <div><dt class="text-slate-500">Preferred contact</dt><dd>{{ client.get_preferred_contact_method_display }}</dd></div>
+          <div><dt class="text-slate-500">Language</dt><dd>{{ client.preferred_language }}</dd></div>
+          {% if not is_partner %}<div><dt class="text-slate-500">ZIP</dt><dd>{{ client.zip_code|default:"—" }}</dd></div>
+          <div><dt class="text-slate-500">Consent to share</dt><dd>{% if client.consent_to_share %}Yes{% if client.consent_signed_at %}, {{ client.consent_signed_at|date:"M j, Y" }}{% endif %}{% else %}<span class="text-amber-700">Not recorded</span>{% endif %}</dd></div>{% endif %}
+        </dl>
+        {% if client.possible_duplicate_of and not is_partner %}<p class="mt-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">Possible duplicate of an existing client — review on the client profile.</p>{% endif %}
+        {% if r.needs %}<div class="mt-4"><p class="text-xs font-medium uppercase tracking-wider text-slate-500">Needs</p><div class="mt-1 flex flex-wrap gap-1.5">{% for n in r.needs %}<span class="rounded-full bg-brand-50 px-2.5 py-0.5 text-xs font-medium text-brand-700">{{ n|title }}</span>{% endfor %}</div></div>{% endif %}
+      </section>
+
+      <section class="rounded-xl border border-slate-200 bg-white p-5" aria-labelledby="answers-h">
+        <h2 id="answers-h" class="text-base font-semibold text-brand-900">Form answers{% if r.form_template %} <span class="text-sm font-normal text-slate-500">· {{ r.form_template.name }} v{{ r.form_version }}</span>{% endif %}</h2>
+        <dl class="mt-3 divide-y divide-slate-100 text-sm">
+          {% for a in r.answer_items %}
+          <div class="grid gap-1 py-2.5 sm:grid-cols-5"><dt class="text-slate-600 sm:col-span-3">{{ a.label }}</dt><dd class="font-medium sm:col-span-2">{{ a.value }}</dd></div>
+          {% empty %}<p class="py-2 text-slate-500">No answers recorded.</p>{% endfor %}
+        </dl>
+        {% if r.decline_reason %}<p class="mt-3 rounded-md bg-rose-50 px-3 py-2 text-sm text-rose-900"><strong>Declined:</strong> {{ r.decline_reason }}</p>{% endif %}
+        {% if r.outcome_notes %}<p class="mt-3 rounded-md bg-emerald-50 px-3 py-2 text-sm text-emerald-900"><strong>Outcome:</strong> {{ r.outcome|code_label }} — {{ r.outcome_notes }}</p>{% endif %}
+      </section>
+
+      <section id="timeline" class="rounded-xl border border-slate-200 bg-white p-5" aria-labelledby="timeline-h">
+        <h2 id="timeline-h" class="text-base font-semibold text-brand-900">Closed-loop timeline</h2>
+        <p class="mt-1 flex flex-wrap gap-4 text-xs text-slate-500"><span class="flex items-center gap-1"><span class="h-2.5 w-2.5 rounded-full bg-brand-600"></span>Health department</span><span class="flex items-center gap-1"><span class="h-2.5 w-2.5 rounded-full bg-accent-500"></span>Community partner</span><span class="flex items-center gap-1"><span class="h-2.5 w-2.5 rounded-full bg-slate-300"></span>Automatic</span></p>
+        <ol class="relative mt-4 space-y-4 border-l border-slate-200 pl-6">
+          {% for e in events %}
+          <li class="relative">
+            <span class="absolute -left-[31px] top-1 h-3 w-3 rounded-full ring-4 ring-white {% if not e.actor_organization %}bg-slate-300{% elif e.actor_organization.org_type == 'HEALTH_DEPARTMENT' %}bg-brand-600{% else %}bg-accent-500{% endif %}" aria-hidden="true"></span>
+            <p class="text-sm"><span class="font-medium text-slate-900">{% if e.event_type == "STATUS_CHANGE" %}{{ e.get_to_status_display }}{% elif e.event_type == "ASSIGNED" %}Assignment{% elif e.event_type == "MESSAGE" %}Secure message{% elif e.event_type == "NOTIFIED" %}Notifications sent{% else %}{{ e.get_event_type_display }}{% endif %}</span>
+              <span class="text-slate-500">· {% if e.actor %}{{ e.actor }}{% if e.actor_organization %}, {{ e.actor_organization }}{% endif %}{% elif e.actor_organization %}{{ e.actor_organization }}{% else %}Health Depot{% endif %}</span></p>
+            {% if e.note %}<p class="text-sm text-slate-600">{{ e.note }}</p>{% endif %}
+            <p class="text-xs text-slate-400"><time datetime="{{ e.created_at|date:'c' }}">{{ e.created_at|date:"M j, Y g:i a" }}</time></p>
+          </li>
+          {% endfor %}
+        </ol>
+      </section>
+
+      <section id="messages" class="rounded-xl border border-slate-200 bg-white p-5" aria-labelledby="messages-h">
+        <h2 id="messages-h" class="text-base font-semibold text-brand-900">Secure messages</h2>
+        <p class="mt-1 text-sm text-slate-600">Between {{ r.sending_organization }} and {{ r.receiving_organization }}. Kept inside Health Depot — never sent by email.</p>
+        <ul class="mt-4 space-y-3">
+          {% for m in thread_messages %}
+          <li class="flex {% if m.sender == user %}justify-end{% endif %}">
+            <div class="max-w-[85%] rounded-2xl px-4 py-2.5 text-sm {% if m.sender == user %}bg-brand-600 text-white{% elif m.sender.organization.org_type == 'HEALTH_DEPARTMENT' %}bg-brand-50 text-slate-900{% else %}bg-accent-500/10 text-slate-900{% endif %}">
+              <p class="text-xs font-semibold {% if m.sender == user %}text-white/80{% else %}text-slate-600{% endif %}">{{ m.sender }} · {{ m.sender.organization }}</p>
+              <p class="mt-0.5 whitespace-pre-line">{{ m.body }}</p>
+              <p class="mt-1 text-[11px] {% if m.sender == user %}text-white/70{% else %}text-slate-400{% endif %}">{{ m.created_at|date:"M j, g:i a" }}</p>
+            </div>
+          </li>
+          {% empty %}<li class="text-sm text-slate-500">No messages yet.</li>{% endfor %}
+        </ul>
+        <form method="post" action="{% url 'referral-message' r.pk %}" class="mt-4 space-y-2">{% csrf_token %}
+          {% include "partials/field.html" with field=message_form.body %}
+          <button class="rounded-md bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700">Send message</button>
+        </form>
+      </section>
+    </div>
+
+    <div class="space-y-6">
+      <section class="rounded-xl border border-slate-200 bg-white p-5" aria-labelledby="actions-h">
+        <h2 id="actions-h" class="text-base font-semibold text-brand-900">Next step</h2>
+        {% if actions %}
+        <div class="mt-3 space-y-3" x-data="{ open: '' }">
+          {% for status, label, prompt in actions %}
+          <div>
+            {% if prompt or status == "COMPLETED" %}
+            <button type="button" class="w-full rounded-md border px-4 py-2 text-left text-sm font-semibold {% if status == 'DECLINED' or status == 'CLOSED_UNABLE_TO_CONTACT' %}border-slate-300 text-slate-700 hover:bg-slate-50{% else %}border-brand-600 bg-brand-600 text-white hover:bg-brand-700{% endif %}" @click="open = open === '{{ status }}' ? '' : '{{ status }}'" :aria-expanded="open === '{{ status }}'">{{ label }}…</button>
+            <form method="post" action="{% url 'referral-status' r.pk %}" class="mt-2 space-y-2 rounded-md bg-slate-50 p-3" x-show="open === '{{ status }}'" x-cloak>{% csrf_token %}
+              <input type="hidden" name="to_status" value="{{ status }}">
+              {% if status == "COMPLETED" %}
+              <label for="outcome-{{ status }}" class="block text-xs font-medium text-slate-700">Outcome</label>
+              <select id="outcome-{{ status }}" name="outcome" class="w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm">{% for v, l in outcomes %}<option value="{{ v }}">{{ l }}</option>{% endfor %}</select>
+              {% endif %}
+              <label for="note-{{ status }}" class="block text-xs font-medium text-slate-700">{{ prompt }}</label>
+              <textarea id="note-{{ status }}" name="note" rows="2" required class="w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm"></textarea>
+              <button class="rounded-md bg-brand-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-brand-700">Confirm: {{ label }}</button>
+            </form>
+            {% else %}
+            <form method="post" action="{% url 'referral-status' r.pk %}">{% csrf_token %}<input type="hidden" name="to_status" value="{{ status }}">
+              <button class="w-full rounded-md bg-brand-600 px-4 py-2 text-left text-sm font-semibold text-white hover:bg-brand-700">{{ label }}</button></form>
+            {% endif %}
+          </div>
+          {% endfor %}
+        </div>
+        {% elif r.is_final %}
+        <p class="mt-2 text-sm text-slate-600">This referral is closed. The loop is complete.</p>
+        {% else %}
+        <p class="mt-2 text-sm text-slate-600">Waiting on {{ r.receiving_organization }}. You'll be notified when it changes.</p>
+        {% endif %}
+      </section>
+
+      {% if not is_partner %}
+      <section class="rounded-xl border border-slate-200 bg-white p-5" aria-labelledby="assign-h">
+        <h2 id="assign-h" class="text-base font-semibold text-brand-900">Assigned to</h2>
+        <p class="mt-1 text-sm">{{ r.assigned_to|default:"Nobody yet" }}</p>
+        {% if can_assign %}
+        <form method="post" action="{% url 'referral-assign' r.pk %}" class="mt-3 flex gap-2">{% csrf_token %}
+          <label for="assignee" class="sr-only">Assign to</label>
+          <select id="assignee" name="assignee" class="min-w-0 flex-1 rounded-md border border-slate-300 px-2 py-1.5 text-sm">
+            <option value="">— Unassigned —</option>
+            {% for u in assignable %}<option value="{{ u.pk }}" {% if u.pk == r.assigned_to_id %}selected{% endif %}>{{ u }}</option>{% endfor %}
+          </select>
+          <button class="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium hover:bg-slate-50">Save</button>
+        </form>
+        {% endif %}
+      </section>
+
+      <section id="comments" class="rounded-xl border border-slate-200 bg-white p-5" aria-labelledby="comments-h">
+        <h2 id="comments-h" class="text-base font-semibold text-brand-900">Internal comments</h2>
+        <p class="mt-1 text-xs text-slate-500">Health department staff only — partners can't see these.</p>
+        <ul class="mt-3 space-y-3">
+          {% for c in comments %}
+          <li class="rounded-lg bg-slate-50 p-3 text-sm"><p class="text-xs font-semibold text-slate-600">{{ c.author }} · {{ c.created_at|date:"M j, g:i a" }}</p><p class="mt-1 whitespace-pre-line">{{ c.body }}</p>{% if c.mentions.all %}<p class="mt-1 text-xs text-accent-600">{% for m in c.mentions.all %}@{{ m }}{% if not forloop.last %}, {% endif %}{% endfor %}</p>{% endif %}</li>
+          {% empty %}<li class="text-sm text-slate-500">No comments yet.</li>{% endfor %}
+        </ul>
+        <form method="post" action="{% url 'referral-comment' r.pk %}" class="mt-3 space-y-2">{% csrf_token %}
+          {% include "partials/field.html" with field=comment_form.body %}
+          {% include "partials/field.html" with field=comment_form.mentions %}
+          <button class="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium hover:bg-slate-50">Add comment</button>
+        </form>
+      </section>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endwith %}
+{% endblock %}

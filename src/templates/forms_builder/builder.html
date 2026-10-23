@@ -1,0 +1,94 @@
+{% extends "app_shell.html" %}
+{% load static %}
+{% block title %}{{ template.name }} — form builder{% endblock %}
+{% block extra_head %}<script src="{% static 'vendor/Sortable.min.js' %}" defer></script>{% endblock %}
+{% block content %}
+<div class="mx-auto max-w-7xl">
+  <a href="{% url 'form-list' %}" class="text-sm text-brand-600 hover:underline">← All forms</a>
+  <div class="mt-2 flex flex-wrap items-center justify-between gap-3">
+    <div>
+      <h1 class="text-2xl font-semibold tracking-tight text-brand-900">{{ template.name }}</h1>
+      <p class="text-sm text-slate-500">{{ template.program|default:"All programs" }} · v{{ template.version }} · {% if template.is_published %}Published{% else %}Draft{% endif %}</p>
+    </div>
+    {% if template.is_system_template and can_manage %}<a href="{% url 'form-create' %}?copy={{ template.pk }}" class="rounded-md bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700">Make a copy to customize</a>{% endif %}
+  </div>
+  {% if template.is_system_template %}<p class="mt-3 rounded-md border border-accent-500/30 bg-accent-500/5 px-4 py-2 text-sm text-slate-700">This is a prebuilt form. It can be used on referral links as-is, or copied and customized.</p>{% endif %}
+
+  <div class="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,28rem)]">
+    <div class="space-y-6">
+      {% if can_edit %}
+      <details class="rounded-xl border border-slate-200 bg-white p-5">
+        <summary class="cursor-pointer text-sm font-semibold text-brand-900">Form details &amp; publishing</summary>
+        <form method="post" action="{% url 'form-meta' template.pk %}" class="mt-4 space-y-3">{% csrf_token %}
+          {% for field in meta_form %}{% include "partials/field.html" with field=field %}{% endfor %}
+          <button class="rounded-md bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700">Save details</button>
+        </form>
+      </details>
+      {% endif %}
+
+      <section class="rounded-xl border border-slate-200 bg-white p-5">
+        <h2 class="text-base font-semibold text-brand-900">Questions <span class="text-sm font-normal text-slate-500">({{ field_forms|length }})</span></h2>
+        <p class="mt-1 text-sm text-slate-600">Contact details and consent are always included at the top. {% if can_edit %}Drag <span aria-hidden="true">⋮⋮</span> to reorder.{% endif %}</p>
+        <ol id="question-list" class="mt-4 space-y-2" {% if can_edit %}data-reorder-url="{% url 'form-reorder' template.pk %}"{% endif %}>
+          {% for f, ff in field_forms %}
+          <li data-key="{{ f.key }}" class="rounded-lg border border-slate-200 bg-white">
+            <details {% if ff.errors %}open{% endif %}>
+              <summary class="flex cursor-pointer items-center gap-3 px-3 py-2.5">
+                {% if can_edit %}<span data-drag-handle class="cursor-grab select-none px-1 text-slate-400" title="Drag to reorder" aria-hidden="true">⋮⋮</span>{% endif %}
+                <span class="min-w-0 flex-1">
+                  <span class="block truncate text-sm font-medium text-slate-900">{{ forloop.counter }}. {{ f.label }}</span>
+                  <span class="text-xs text-slate-500">{{ field_types|get:f.type }}{% if f.required %} · Required{% endif %}{% if f.show_if %} · Shown if “{{ f.show_if.field }}” = {{ f.show_if.equals }}{% endif %}{% if f.need_tag %} · Need: {{ need_tags|get:f.need_tag }}{% endif %}{% if not f.label_es %} · <span class="text-amber-700">No Spanish text</span>{% endif %}</span>
+                </span>
+              </summary>
+              {% if can_edit %}
+              <div class="border-t border-slate-100 p-4">
+                <form method="post" action="{% url 'form-field-update' template.pk f.key %}" class="space-y-3">{% csrf_token %}
+                  {% include "forms_builder/_field_form.html" with form=ff %}
+                  <div class="flex gap-2"><button class="rounded-md bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700">Save question</button></div>
+                </form>
+                <form method="post" action="{% url 'form-field-delete' template.pk f.key %}" class="mt-2">{% csrf_token %}
+                  <button data-confirm="Remove this question?" class="text-sm font-medium text-red-700 hover:underline">Remove question</button>
+                </form>
+              </div>
+              {% endif %}
+            </details>
+          </li>
+          {% empty %}
+          <li class="rounded-lg border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500">No questions yet.</li>
+          {% endfor %}
+        </ol>
+      </section>
+
+      {% if can_edit %}
+      <section class="rounded-xl border border-slate-200 bg-white p-5">
+        <h2 class="text-base font-semibold text-brand-900">Add a question</h2>
+        <form method="post" action="{% url 'form-field-add' template.pk %}" class="mt-4 space-y-3">{% csrf_token %}
+          {% include "forms_builder/_field_form.html" with form=add_form %}
+          <button class="rounded-md bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700">Add question</button>
+        </form>
+      </section>
+      {% endif %}
+    </div>
+
+    <aside class="lg:sticky lg:top-20 lg:self-start">
+      <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <h2 class="text-base font-semibold text-brand-900">Live preview</h2>
+        <form method="get" class="flex items-center gap-2 text-sm">
+          <label for="preview-partner" class="sr-only">Preview as partner</label>
+          <select id="preview-partner" name="partner" class="rounded-md border border-slate-300 px-2 py-1 text-sm" data-autosubmit>
+            {% for p in partners %}<option value="{{ p.pk }}" {% if p == partner %}selected{% endif %}>{{ p.name }}</option>{% endfor %}
+          </select>
+          <select name="lang" class="rounded-md border border-slate-300 px-2 py-1 text-sm" aria-label="Preview language" data-autosubmit>
+            <option value="en" {% if lang == "en" %}selected{% endif %}>English</option>
+            <option value="es" {% if lang == "es" %}selected{% endif %}>Español</option>
+          </select>
+          <noscript><button class="rounded border px-2 py-1">Show</button></noscript>
+        </form>
+      </div>
+      <form data-conditional data-prefix="q" class="max-h-[75vh] overflow-y-auto rounded-2xl" aria-label="Preview of the public form" data-no-submit>
+        {% include "public/_form_body.html" %}
+      </form>
+    </aside>
+  </div>
+</div>
+{% endblock %}

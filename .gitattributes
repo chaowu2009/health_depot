@@ -1,0 +1,10 @@
+# Keep Linux line endings for files that run inside containers (important on Windows).
+* text=auto
+*.sh text eol=lf
+*.py text eol=lf
+Dockerfile text eol=lf
+Caddyfile text eol=lf
+*.yaml text eol=lf
+*.json text eol=lf
+Makefile text eol=lf
+*.ps1 text eol=crlf

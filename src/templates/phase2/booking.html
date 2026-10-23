@@ -1,0 +1,33 @@
+{% extends "app_shell.html" %}
+{% block title %}Book an appointment{% endblock %}
+{% block content %}
+<div class="mx-auto max-w-2xl" x-data="{ step: 1, service: '', clinic: '', day: '', slot: '' }">
+  {% include "phase2/_header.html" with title="Public self-booking" subtitle="What residents and partners will see when booking directly into clinic schedules." %}
+  <div class="mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <div class="bg-brand-600 px-5 py-4 text-white"><p class="font-semibold">Calvert County Health Department</p><p class="text-xs opacity-90">Book an appointment</p></div>
+    <div class="space-y-5 p-6">
+      <ol class="flex gap-2 text-xs font-medium text-slate-500" aria-label="Steps"><li :class="step >= 1 && 'text-brand-700'">1. Service</li><li>›</li><li :class="step >= 2 && 'text-brand-700'">2. Location &amp; time</li><li>›</li><li :class="step >= 3 && 'text-brand-700'">3. Confirm</li></ol>
+      <div x-show="step === 1" class="grid gap-2 sm:grid-cols-2">
+        {% for s in services %}<button type="button" @click="service = '{{ s }}'; step = 2" class="rounded-lg border border-slate-200 px-4 py-3 text-left text-sm font-medium hover:border-brand-600">{{ s }}</button>{% endfor %}
+      </div>
+      <div x-show="step === 2" x-cloak class="space-y-4">
+        <p class="text-sm">Service: <strong x-text="service"></strong></p>
+        <label class="block text-sm font-medium" for="bk-clinic">Location</label>
+        <select id="bk-clinic" x-model="clinic" class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm"><option value="">Choose a location</option>{% for c in clinics %}<option>{{ c.name }}</option>{% endfor %}</select>
+        <p class="text-sm font-medium">Date</p>
+        <div class="flex flex-wrap gap-2">{% for d in dates %}<button type="button" @click="day = '{{ d|date:"l, M j" }}'" :class="day === '{{ d|date:"l, M j" }}' ? 'border-brand-600 bg-brand-50' : 'border-slate-200'" class="rounded-lg border px-3 py-2 text-sm">{{ d|date:"D M j" }}</button>{% endfor %}</div>
+        <p class="text-sm font-medium">Time</p>
+        <div class="grid grid-cols-3 gap-2 sm:grid-cols-5">{% for s in slots %}<button type="button" @click="slot = '{{ s }}'" :class="slot === '{{ s }}' ? 'border-brand-600 bg-brand-50' : 'border-slate-200'" class="rounded-lg border px-2 py-2 text-sm">{{ s }}</button>{% endfor %}</div>
+        <div class="flex gap-2"><button type="button" @click="step = 1" class="rounded-md border border-slate-300 px-4 py-2 text-sm">Back</button><button type="button" :disabled="!clinic || !day || !slot" @click="step = 3" class="rounded-md bg-brand-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">Continue</button></div>
+      </div>
+      <div x-show="step === 3" x-cloak class="space-y-3 text-center">
+        <div class="mx-auto grid h-12 w-12 place-items-center rounded-full bg-emerald-100 text-2xl text-emerald-700" aria-hidden="true">✓</div>
+        <h2 class="text-lg font-semibold">You're booked</h2>
+        <p class="text-sm text-slate-600"><span x-text="service"></span> · <span x-text="clinic"></span><br><span x-text="day"></span> at <span x-text="slot"></span></p>
+        <p class="text-xs text-slate-500">A confirmation and reminder would be sent by text or email. (Preview — no appointment was created.)</p>
+        <button type="button" @click="step = 1; service = clinic = day = slot = ''" class="rounded-md border border-slate-300 px-4 py-2 text-sm">Book another</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,22 @@
+{% extends "app_shell.html" %}
+{% block title %}Tools{% endblock %}
+{% block content %}
+<div class="mx-auto max-w-6xl">
+  <h1 class="text-2xl font-semibold tracking-tight text-brand-900">Administration</h1>
+  {% include "accounts/manage/_tabs.html" %}
+  <div class="mt-6 grid gap-6 md:grid-cols-2">
+    <section class="rounded-xl border border-slate-200 bg-white p-5">
+      <h2 class="text-base font-semibold text-brand-900">Overdue reminders</h2>
+      <p class="mt-1 text-sm text-slate-600">Reminders go out automatically every hour. Send them now for any referral waiting longer than its program's response window.</p>
+      <form method="post" class="mt-4">{% csrf_token %}<input type="hidden" name="action" value="reminders"><button class="rounded-md bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700">Run reminders now</button></form>
+    </section>
+    {% if demo_mode %}
+    <section class="rounded-xl border border-amber-200 bg-amber-50 p-5">
+      <h2 class="text-base font-semibold text-amber-900">Reset demo data</h2>
+      <p class="mt-1 text-sm text-amber-900">Deletes all clients, referrals, cases, partners, messages and the audit log, then rebuilds the synthetic demo data and demo accounts. Takes about 15 seconds. Only available in demo mode.</p>
+      <form method="post" class="mt-4">{% csrf_token %}<input type="hidden" name="action" value="reset-demo"><button data-confirm="Reset ALL demo data now?" class="rounded-md border border-amber-400 bg-white px-4 py-2 text-sm font-semibold text-amber-900 hover:bg-amber-100">Reset demo data</button></form>
+    </section>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

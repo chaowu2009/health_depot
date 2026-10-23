@@ -1,0 +1,27 @@
+{% extends "app_shell.html" %}
+{% block title %}Clients{% endblock %}
+{% block content %}
+<div class="mx-auto max-w-5xl">
+  <h1 class="text-2xl font-semibold tracking-tight text-brand-900">Clients</h1>
+  <p class="mt-1 text-sm text-slate-600">People in the programs you can access.</p>
+  <form method="get" class="mt-5 flex flex-wrap items-center gap-3" role="search">
+    <label for="q" class="sr-only">Search clients</label>
+    <input id="q" name="q" value="{{ q }}" placeholder="Name, phone or ZIP" class="w-72 rounded-md border border-slate-300 px-3 py-2 text-sm">
+    <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="duplicates" {% if request.GET.duplicates %}checked{% endif %} data-autosubmit class="h-4 w-4 rounded border-slate-300"> Possible duplicates only</label>
+    <button class="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium hover:bg-slate-50">Search</button>
+  </form>
+  <div class="mt-4 overflow-x-auto rounded-xl border border-slate-200 bg-white">
+    <table class="min-w-full divide-y divide-slate-200 text-sm">
+      <caption class="sr-only">Clients</caption>
+      <thead class="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wider text-slate-500"><tr><th scope="col" class="px-4 py-3">Name</th><th scope="col" class="px-4 py-3">Date of birth</th><th scope="col" class="px-4 py-3">ZIP</th><th scope="col" class="px-4 py-3">Referrals</th><th scope="col" class="px-4 py-3">Cases</th></tr></thead>
+      <tbody class="divide-y divide-slate-100">
+        {% for c in clients %}
+        <tr class="hover:bg-slate-50"><td class="px-4 py-3"><a href="{% url 'client-detail' c.pk %}" class="font-medium text-brand-600 hover:underline">{{ c.last_name }}, {{ c.first_name }}</a>{% if c.possible_duplicate_of_id %} <span class="ml-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-900">Possible duplicate</span>{% endif %}</td>
+          <td class="px-4 py-3">{{ c.date_of_birth|date:"M j, Y" }}</td><td class="px-4 py-3">{{ c.zip_code }}</td><td class="px-4 py-3">{{ c.referral_count }}</td><td class="px-4 py-3">{{ c.case_count }}</td></tr>
+        {% empty %}<tr><td colspan="5" class="px-4 py-10 text-center text-slate-500">No clients found.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% include "partials/pagination.html" with is_paginated=page_obj.has_other_pages paginator=page_obj.paginator %}
+</div>
+{% endblock %}

@@ -1,0 +1,116 @@
+# Health Depot — PRODUCTION-LIKE local stack (built image, Gunicorn, read-only containers).
+# Mirrors the future AWS layout: proxy ≈ load balancer, web + worker ≈ ECS services,
+# db ≈ RDS PostgreSQL, s3 ≈ Amazon S3, mailpit ≈ SES.
+# Start: make up-prod
+name: health-depot-prod
+
+x-app: &app
+  build:
+    context: .
+    target: runtime
+    secrets: [extra_ca]
+  image: health-depot:latest
+  env_file: .env
+  environment:
+    DEBUG: "false"
+    LOG_FORMAT: json
+    DEMO_MODE: "true"  # local demo only — never set in a real deployment
+  read_only: true
+  tmpfs:
+    - /tmp:size=64m
+  security_opt:
+    - no-new-privileges:true
+  cap_drop: [ALL]
+  restart: unless-stopped
+
+services:
+  db:
+    image: postgres:16.15
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits: {cpus: "1.0", memory: 1g}
+
+  s3:
+    image: chrislusf/seaweedfs:4.48
+    command: >
+      server -dir=/data -ip=s3 -ip.bind=0.0.0.0
+      -master.volumeSizeLimitMB=1024 -volume.max=20
+      -s3 -s3.port=8333 -s3.config=/etc/seaweedfs/s3.json
+    volumes:
+      - s3-data:/data
+      - ./deploy/seaweedfs/s3.json:/etc/seaweedfs/s3.json:ro
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8333/healthz || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+    restart: unless-stopped
+
+  mailpit:
+    image: axllent/mailpit:v1.31.6
+    ports:
+      - "127.0.0.1:${MAILPIT_UI_PORT:-8025}:8025"
+    restart: unless-stopped
+
+  migrate:
+    <<: *app
+    command: ["migrate"]
+    restart: "no"
+    depends_on:
+      db: {condition: service_healthy}
+      s3: {condition: service_healthy}
+
+  web:
+    <<: *app
+    command: ["web"]
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+    deploy:
+      resources:
+        limits: {cpus: "1.0", memory: 768m}
+
+  worker:
+    <<: *app
+    command: ["worker"]
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+    deploy:
+      resources:
+        limits: {cpus: "0.5", memory: 512m}
+
+  proxy:
+    image: caddy:2.11.7
+    ports:
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+      - "${S3_PUBLIC_PORT:-9443}:9443"
+    environment:
+      CADDY_TLS: ${CADDY_TLS:-internal}
+    volumes:
+      - ./deploy/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./deploy/caddy/certs:/certs:ro
+      - caddy-data:/data
+    depends_on:
+      web: {condition: service_healthy}
+    restart: unless-stopped
+
+secrets:
+  extra_ca:
+    file: ${EXTRA_CA_FILE:-./deploy/no-extra-ca.pem}
+
+volumes:
+  db-data:
+  s3-data:
+  caddy-data:

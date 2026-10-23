@@ -1,0 +1,6 @@
+<nav class="mt-4 flex gap-4 border-b border-slate-200 text-sm" aria-label="Administration">
+  <a href="{% url 'manage-user-list' %}" class="-mb-px border-b-2 px-1 pb-2 {% if active == 'manage' %}border-accent-500 font-semibold text-brand-900{% else %}border-transparent text-slate-500 hover:text-slate-700{% endif %}" {% if active == 'manage' %}aria-current="page"{% endif %}>Users &amp; access</a>
+  <a href="{% url 'manage-audit-log' %}" class="-mb-px border-b-2 px-1 pb-2 {% if active == 'audit' %}border-accent-500 font-semibold text-brand-900{% else %}border-transparent text-slate-500 hover:text-slate-700{% endif %}" {% if active == 'audit' %}aria-current="page"{% endif %}>Audit log</a>
+  <a href="{% url 'manage-tools' %}" class="-mb-px border-b-2 px-1 pb-2 {% if active == 'tools' %}border-accent-500 font-semibold text-brand-900{% else %}border-transparent text-slate-500 hover:text-slate-700{% endif %}" {% if active == 'tools' %}aria-current="page"{% endif %}>Tools</a>
+  <a href="{% url 'admin:index' %}" class="-mb-px border-b-2 border-transparent px-1 pb-2 text-slate-500 hover:text-slate-700">Advanced (Django admin)</a>
+</nav>

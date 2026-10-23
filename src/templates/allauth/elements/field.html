@@ -1,0 +1,19 @@
+{% load allauth %}
+{% if attrs.type == "checkbox" or attrs.type == "radio" %}
+<div class="flex items-center gap-2">
+  <input type="{{ attrs.type }}" {% if attrs.id %}id="{{ attrs.id }}"{% endif %} {% if attrs.name %}name="{{ attrs.name }}"{% endif %} {% if attrs.checked %}checked{% endif %} class="h-4 w-4 rounded border-slate-300">
+  <label for="{{ attrs.id }}" class="text-sm text-slate-700">{% slot label %}{% endslot %}</label>
+</div>
+{% else %}
+<div class="space-y-1">
+  <label for="{{ attrs.id }}" class="block text-sm font-medium text-slate-700">{% slot label %}{% endslot %}</label>
+  {% if attrs.type == "textarea" %}
+  <textarea {% if attrs.id %}id="{{ attrs.id }}"{% endif %} {% if attrs.name %}name="{{ attrs.name }}"{% endif %} {% if attrs.rows %}rows="{{ attrs.rows }}"{% endif %} {% if attrs.readonly %}readonly{% endif %} {% if attrs.disabled %}disabled{% endif %}
+            class="block w-full rounded-md border border-slate-300 bg-slate-50 px-3 py-2 font-mono text-sm text-slate-900">{% slot value %}{% endslot %}</textarea>
+  {% else %}
+  <input {% if attrs.name %}name="{{ attrs.name }}"{% endif %} {% if attrs.id %}id="{{ attrs.id }}"{% endif %} type="{{ attrs.type }}" {% if attrs.value is not None %}value="{{ attrs.value }}"{% endif %} {% if attrs.disabled %}disabled{% endif %} {% if attrs.readonly %}readonly{% endif %} {% if attrs.required %}required{% endif %} {% if attrs.autocomplete %}autocomplete="{{ attrs.autocomplete }}"{% endif %}
+         class="block w-full rounded-md border border-slate-300 bg-slate-50 px-3 py-2 font-mono text-sm text-slate-900">
+  {% endif %}
+  {% if slots.help_text %}<p class="text-xs text-slate-500">{% slot help_text %}{% endslot %}</p>{% endif %}
+</div>
+{% endif %}

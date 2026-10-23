@@ -1,0 +1,32 @@
+{% extends "app_shell.html" %}
+{% block title %}Forms{% endblock %}
+{% block content %}
+<div class="mx-auto max-w-6xl">
+  <div class="flex flex-wrap items-end justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-semibold tracking-tight text-brand-900">Intake &amp; referral forms</h1>
+      <p class="mt-1 text-sm text-slate-600">Every public form starts with basic contact details and consent, then asks the questions you build here — in English and Spanish.</p>
+    </div>
+    {% if can_manage %}<a href="{% url 'form-create' %}" class="rounded-md bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700">New form</a>{% endif %}
+  </div>
+  <div class="mt-6 overflow-x-auto rounded-xl border border-slate-200 bg-white">
+    <table class="min-w-full divide-y divide-slate-200 text-sm">
+      <caption class="sr-only">Form templates</caption>
+      <thead class="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
+        <tr><th scope="col" class="px-4 py-3">Form</th><th scope="col" class="px-4 py-3">Program</th><th scope="col" class="px-4 py-3">Questions</th><th scope="col" class="px-4 py-3">Status</th><th scope="col" class="px-4 py-3">Version</th></tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100">
+        {% for t in templates %}
+        <tr class="hover:bg-slate-50">
+          <td class="px-4 py-3"><a href="{% url 'form-builder' t.pk %}" class="font-medium text-brand-600 hover:underline">{{ t.name }}</a>{% if t.is_system_template %} <span class="ml-1 rounded-full bg-accent-500/10 px-2 py-0.5 text-xs font-medium text-accent-600">Prebuilt</span>{% endif %}<div class="text-xs text-slate-500">{{ t.description|truncatechars:90 }}</div></td>
+          <td class="px-4 py-3">{{ t.program|default:"All programs" }}</td>
+          <td class="px-4 py-3">{{ t.fields|length }}</td>
+          <td class="px-4 py-3">{% if t.is_published %}Published{% else %}<span class="text-slate-500">Draft</span>{% endif %}</td>
+          <td class="px-4 py-3 text-slate-500">v{{ t.version }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

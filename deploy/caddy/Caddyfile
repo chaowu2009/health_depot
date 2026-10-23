@@ -1,0 +1,29 @@
+# Local HTTPS proxy — plays the role an AWS Application Load Balancer will play later.
+# TLS: uses mkcert certificates when present (make certs), otherwise Caddy's internal CA.
+{
+	admin off
+	auto_https disable_redirects
+	servers {
+		protocols h1 h2
+	}
+}
+
+# The app
+https://localhost, https://demo.local {
+	tls {$CADDY_TLS:internal}
+	encode zstd gzip
+	header {
+		-Server
+	}
+	reverse_proxy {$APP_UPSTREAM:web:8000}
+}
+
+# File storage (presigned URLs only; objects are private)
+https://localhost:9443 {
+	tls {$CADDY_TLS:internal}
+	reverse_proxy s3:8333
+}
+
+http://localhost, http://demo.local {
+	redir https://{host}{uri} permanent
+}

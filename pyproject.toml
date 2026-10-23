@@ -1,0 +1,91 @@
+[project]
+name = "health-depot"
+version = "0.1.0"
+description = "Health Depot — closed-loop referral and case management platform (Columbia Technology LLC)"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "django>=5.2,<5.3",
+    "psycopg[binary]>=3.2",
+    "gunicorn>=23.0",
+    "django-environ>=0.12",
+    "django-storages[s3]>=1.14",
+    "boto3>=1.35",
+    "whitenoise>=6.8",
+    "structlog>=24.4",
+    "apscheduler>=3.11,<4",
+    "django-allauth[mfa]>=65.3",
+    "django-ratelimit>=4.1",
+    "django-csp>=4.0",
+    "openpyxl>=3.1",
+    "qrcode>=8.0",
+    "faker>=30.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+    "pytest-django>=4.9",
+    "factory-boy>=3.3",
+    "ruff>=0.8",
+    "mypy>=1.13",
+    "django-stubs[compatible-mypy]>=5.1",
+    "boto3-stubs[s3]>=1.35",
+    "bandit>=1.8",
+    "pip-audit>=2.7",
+]
+
+[tool.uv]
+package = false
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "tests"]
+extend-exclude = ["src/apps/*/migrations"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "S", "DJ", "SIM", "C4"]
+ignore = ["S101"]  # assert is fine in tests
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S105", "S106", "S311"]
+# Sample/demo data generators: non-cryptographic randomness is intended.
+"src/apps/phase2/*" = ["S311"]
+"src/apps/core/management/commands/seed_demo.py" = ["S311", "S105", "E501", "SIM102"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["apps", "config"]
+
+[tool.mypy]
+python_version = "3.12"
+mypy_path = "src"
+plugins = ["mypy_django_plugin.main"]
+ignore_missing_imports = true
+check_untyped_defs = true
+exclude = ["migrations/"]
+
+[tool.django-stubs]
+django_settings_module = "config.settings"
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings"
+pythonpath = ["src"]
+testpaths = ["tests"]
+addopts = "-q --strict-markers"
+filterwarnings = ["ignore:No directory at:UserWarning"]
+
+# Type checking is strict for core logic (access rules, audit, scheduler, storage).
+# UI layers (views/forms) lean on Django's dynamic APIs that the stubs can't fully express.
+[[tool.mypy.overrides]]
+module = [
+    "apps.*.views", "apps.*.views_manage", "apps.*.forms", "apps.*.management.commands.*",
+    "apps.forms_builder.dynamic", "apps.forms_builder.intake", "apps.referrals.services",
+    "apps.reports.services", "apps.cases.services", "apps.phase2.*",
+]
+disable_error_code = ["attr-defined", "assignment", "index", "call-overload", "var-annotated",
+                      "union-attr", "operator",
+                      "misc", "arg-type"]
+
+[tool.bandit]
+# B101: assert is used for type narrowing in forms. B311: random is only used for demo data.
+skips = ["B101", "B311"]

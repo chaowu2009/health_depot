@@ -1,0 +1,31 @@
+{% extends "app_shell.html" %}
+{% block title %}Reports{% endblock %}
+{% block content %}
+<div class="mx-auto max-w-7xl">
+  <h1 class="text-2xl font-semibold tracking-tight text-brand-900">Custom report</h1>
+  <p class="mt-1 text-sm text-slate-600">Choose filters and columns, preview, then download as Excel or CSV. Every download is recorded in the audit log.</p>
+  <form method="get" class="mt-5 space-y-4 rounded-xl border border-slate-200 bg-white p-5">
+    <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+      {% include "partials/field.html" with field=form.start %}{% include "partials/field.html" with field=form.end %}
+      {% include "partials/field.html" with field=form.program %}{% include "partials/field.html" with field=form.partner %}
+      {% include "partials/field.html" with field=form.status %}
+    </div>
+    <fieldset><legend class="text-sm font-medium text-slate-700">Columns</legend>
+      <div class="mt-2 grid gap-2 sm:grid-cols-3 lg:grid-cols-6">{% for cb in form.columns %}<label class="flex items-center gap-2 text-sm">{{ cb.tag }} {{ cb.choice_label }}</label>{% endfor %}</div>
+    </fieldset>
+    <div class="flex flex-wrap gap-2">
+      <button class="rounded-md bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700">Preview</button>
+      <a href="?{{ querystring }}{% if querystring %}&amp;{% endif %}export=xlsx" class="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium hover:bg-slate-50">Download Excel</a>
+      <a href="?{{ querystring }}{% if querystring %}&amp;{% endif %}export=csv" class="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium hover:bg-slate-50">Download CSV</a>
+    </div>
+    {% if has_identifiers %}<p class="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">This report includes client names. Store downloads securely and share only with authorized staff.</p>{% endif %}
+  </form>
+  <p class="mt-4 text-sm text-slate-600">{{ total }} referral{{ total|pluralize }} match{% if total > preview_limit %} · showing the first {{ preview_limit }}{% endif %}.</p>
+  <div class="mt-2 overflow-x-auto rounded-xl border border-slate-200 bg-white">
+    <table class="min-w-full divide-y divide-slate-200 text-sm"><caption class="sr-only">Report preview</caption>
+      <thead class="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wider text-slate-500"><tr>{% for h in headers %}<th scope="col" class="whitespace-nowrap px-3 py-2.5">{{ h }}</th>{% endfor %}</tr></thead>
+      <tbody class="divide-y divide-slate-100">{% for row in rows %}<tr>{% for v in row %}<td class="whitespace-nowrap px-3 py-2">{{ v }}</td>{% endfor %}</tr>{% empty %}<tr><td colspan="{{ headers|length }}" class="px-3 py-8 text-center text-slate-500">No referrals match.</td></tr>{% endfor %}</tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

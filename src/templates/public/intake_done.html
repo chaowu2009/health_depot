@@ -1,0 +1,16 @@
+{% extends "public/_layout.html" %}
+{% block title %}{{ t.thanks }}{% endblock %}
+{% block public_content %}
+<div class="overflow-hidden rounded-2xl border border-slate-200 bg-white text-center shadow-sm" style="--brand: {{ partner.brand_color|default:'#0F4C81' }}">
+  <div class="px-5 py-4 text-white" style="background-color: var(--brand)"><p class="font-semibold">{{ partner.name }}</p></div>
+  <div class="space-y-4 p-8">
+    <div class="mx-auto grid h-12 w-12 place-items-center rounded-full bg-emerald-100 text-2xl text-emerald-700" aria-hidden="true">✓</div>
+    <h1 class="text-xl font-semibold text-slate-900">{{ t.thanks }}</h1>
+    {% if reference %}
+    <p class="text-sm text-slate-600">{{ t.reference }}</p>
+    <p class="font-mono text-2xl font-bold tracking-wider text-slate-900">{{ reference }}</p>
+    {% endif %}
+    <p class="text-sm text-slate-600">{{ t.next }}</p>
+  </div>
+</div>
+{% endblock %}

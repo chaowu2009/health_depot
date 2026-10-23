@@ -1,0 +1,43 @@
+{# Shared by the public intake page and the form-builder preview. #}
+{% load ui %}
+<div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm" style="--brand: {{ partner.brand_color|default:'#0F4C81' }}">
+  <div class="flex items-center justify-between gap-3 px-5 py-4 text-white" style="background-color: var(--brand)">
+    <div class="flex min-w-0 items-center gap-3">
+      {% if partner.logo_url %}<img src="{{ partner.logo_url }}" alt="" class="h-10 w-10 rounded bg-white object-contain p-0.5">{% endif %}
+      <div class="min-w-0">
+        <p class="truncate text-base font-semibold">{{ partner.name|default:"Community partner" }}</p>
+        <p class="text-xs opacity-90">with Calvert County Health Department</p>
+      </div>
+    </div>
+    {% if lang_switch_url %}<a href="{{ lang_switch_url }}" class="shrink-0 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold hover:bg-white/25" lang="{{ t.switch_lang }}">{{ t.switch }}</a>{% endif %}
+  </div>
+  <div class="space-y-6 p-5 sm:p-6">
+    {% if identity_form.non_field_errors %}<div class="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800" role="alert">{{ identity_form.non_field_errors|join:" " }}</div>{% endif %}
+    <fieldset class="space-y-4">
+      <legend class="text-base font-semibold text-slate-900">{{ t.about }}</legend>
+      <div class="grid gap-4 sm:grid-cols-2">
+        {% include "partials/field.html" with field=identity_form.first_name %}
+        {% include "partials/field.html" with field=identity_form.last_name %}
+        {% include "partials/field.html" with field=identity_form.date_of_birth %}
+        {% include "partials/field.html" with field=identity_form.zip_code %}
+        {% include "partials/field.html" with field=identity_form.phone %}
+        {% include "partials/field.html" with field=identity_form.email %}
+        {% include "partials/field.html" with field=identity_form.preferred_language %}
+      </div>
+      {% include "public/_question.html" with field=identity_form.preferred_contact_method %}
+      <div class="absolute -left-[9999px]" aria-hidden="true">{{ identity_form.website.label_tag }}{{ identity_form.website }}</div>
+    </fieldset>
+    {% if question_form.fields %}
+    <fieldset class="space-y-5">
+      <legend class="text-base font-semibold text-slate-900">{{ t.questions }}</legend>
+      {% for field in question_form %}{% include "public/_question.html" with field=field %}{% endfor %}
+    </fieldset>
+    {% endif %}
+    <div class="space-y-3 rounded-lg bg-slate-50 p-4">
+      {% include "public/_question.html" with field=identity_form.consent_to_contact %}
+      {% include "public/_question.html" with field=identity_form.consent_to_share %}
+    </div>
+    <button type="submit" {% if preview %}disabled title="Preview only"{% endif %} class="w-full rounded-lg px-4 py-3 text-base font-semibold text-white disabled:cursor-not-allowed disabled:opacity-70" style="background-color: var(--brand)">{{ t.submit }}</button>
+    <p class="text-center text-xs text-slate-500">{{ t.privacy }}</p>
+  </div>
+</div>

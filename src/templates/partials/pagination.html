@@ -1,0 +1,9 @@
+{% if is_paginated %}
+<nav class="mt-4 flex items-center justify-between text-sm" aria-label="Pagination">
+  <p class="text-slate-500">Page {{ page_obj.number }} of {{ paginator.num_pages }} · {{ paginator.count }} total</p>
+  <div class="flex gap-2">
+    {% if page_obj.has_previous %}<a class="rounded-md border border-slate-300 bg-white px-3 py-1.5 hover:bg-slate-50" href="?{% if querystring %}{{ querystring }}&amp;{% endif %}page={{ page_obj.previous_page_number }}">Previous</a>{% endif %}
+    {% if page_obj.has_next %}<a class="rounded-md border border-slate-300 bg-white px-3 py-1.5 hover:bg-slate-50" href="?{% if querystring %}{{ querystring }}&amp;{% endif %}page={{ page_obj.next_page_number }}">Next</a>{% endif %}
+  </div>
+</nav>
+{% endif %}

@@ -1,0 +1,30 @@
+{% extends "account/base_entrance.html" %}
+{% load allauth %}
+{% block head_title %}Sign in{% endblock head_title %}
+{% block content %}
+<div>
+  <h1 class="text-xl font-semibold tracking-tight text-brand-900">Sign in</h1>
+  <p class="mt-1 text-sm text-slate-600">Calvert County Health Department and community partner staff.</p>
+</div>
+{% url 'account_login' as login_url %}
+<form method="post" action="{{ login_url }}" class="space-y-4" novalidate>
+  {% csrf_token %}
+  {% if form.non_field_errors %}
+  <div class="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800" role="alert">{{ form.non_field_errors|join:" " }}</div>
+  {% endif %}
+  {% include "partials/field.html" with field=form.login %}
+  {% include "partials/field.html" with field=form.password %}
+  {{ redirect_field }}
+  <button type="submit" class="w-full rounded-md bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-700">Sign in</button>
+</form>
+<div class="relative py-1 text-center text-xs uppercase tracking-wider text-slate-400">
+  <span class="bg-white px-2">or</span>
+</div>
+<button type="button" disabled aria-describedby="sso-note"
+        class="flex w-full cursor-not-allowed items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-500">
+  <span class="grid h-5 w-5 place-items-center rounded-full border border-slate-300 text-xs font-bold" aria-hidden="true">G</span>
+  Sign in with Google
+</button>
+<p id="sso-note" class="text-center text-xs text-slate-500">SSO — configured at implementation</p>
+<p class="text-center text-xs text-slate-500">Forgot your password? Contact your system administrator.</p>
+{% endblock content %}

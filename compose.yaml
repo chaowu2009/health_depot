@@ -1,0 +1,119 @@
+# Health Depot — DEVELOPMENT stack (code mounted, auto-reload).
+# Start: make up   ·   App: https://localhost   ·   Email: http://localhost:8025
+name: health-depot
+
+x-app: &app
+  build:
+    context: .
+    target: dev
+    secrets: [extra_ca]
+  image: health-depot:dev
+  env_file: .env
+  environment:
+    DEMO_MODE: "true"  # local demo: synthetic data is loaded automatically on first start
+  volumes:
+    - .:/app
+  depends_on:
+    db:
+      condition: service_healthy
+
+services:
+  db:
+    image: postgres:16.15
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  s3:
+    # SeaweedFS: S3-compatible object storage (stands in for Amazon S3).
+    image: chrislusf/seaweedfs:4.48
+    command: >
+      server -dir=/data -ip=s3 -ip.bind=0.0.0.0
+      -master.volumeSizeLimitMB=1024 -volume.max=20
+      -s3 -s3.port=8333 -s3.config=/etc/seaweedfs/s3.json
+    volumes:
+      - s3-data:/data
+      - ./deploy/seaweedfs/s3.json:/etc/seaweedfs/s3.json:ro
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8333/healthz || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  mailpit:
+    image: axllent/mailpit:v1.31.6
+    ports:
+      - "127.0.0.1:${MAILPIT_UI_PORT:-8025}:8025"
+
+  migrate:
+    <<: *app
+    command: ["migrate"]
+    restart: "no"
+    depends_on:
+      db:
+        condition: service_healthy
+      s3:
+        condition: service_healthy
+
+  web:
+    <<: *app
+    command: ["dev"]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  worker:
+    <<: *app
+    command: ["worker"]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      mailpit:
+        condition: service_started
+
+  tailwind:
+    # Rebuilds src/static/css/app.css whenever templates change (development only).
+    image: node:22.23.3-alpine
+    working_dir: /app
+    environment:
+      NODE_EXTRA_CA_CERTS: /run/secrets/extra_ca
+    secrets: [extra_ca]
+    volumes:
+      - .:/app
+      - node-modules:/app/node_modules
+    command: >
+      sh -c "npm ci --no-audit --no-fund &&
+             npx @tailwindcss/cli -i src/assets/tailwind.css -o src/static/css/app.css --watch=always"
+
+  proxy:
+    image: caddy:2.11.7
+    ports:
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+      - "${S3_PUBLIC_PORT:-9443}:9443"
+    environment:
+      CADDY_TLS: ${CADDY_TLS:-internal}
+    volumes:
+      - ./deploy/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./deploy/caddy/certs:/certs:ro
+      - caddy-data:/data
+    depends_on:
+      - web
+
+secrets:
+  extra_ca:
+    file: ${EXTRA_CA_FILE:-./deploy/no-extra-ca.pem}
+
+volumes:
+  db-data:
+  s3-data:
+  caddy-data:
+  node-modules:

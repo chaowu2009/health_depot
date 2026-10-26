@@ -1,0 +1,169 @@
+# Health Depot — DigitalOcean App Platform spec (demo deployment).
+#
+# Same Docker image as local/AWS; three components run it with different commands:
+#   migrate (PRE_DEPLOY job) -> migrations, cache table, bootstrap data, demo seed
+#   web (service)            -> Gunicorn on port 8000
+#   worker (worker)          -> email outbox + scheduled jobs
+#
+# Before using: replace OWNER/REPO and the CHANGE-ME values. Apply with
+#   doctl apps create --spec .do/app.yaml          (new app)
+#   doctl apps update <app-id> --spec .do/app.yaml (existing app)
+# or paste it into Control Panel -> your app -> Settings -> App Spec -> Edit.
+# Full guide: DEPLOYMENT_DIGITALOCEAN.md
+
+name: health-depot
+region: nyc
+
+# Settings shared by every component. ${APP_DOMAIN}/${APP_URL} are filled in by DigitalOcean.
+envs:
+  - key: DJANGO_SECRET_KEY
+    scope: RUN_TIME
+    type: SECRET
+    value: CHANGE-ME-to-a-long-random-string
+  - key: DEBUG
+    scope: RUN_TIME
+    value: "false"
+  - key: ALLOWED_HOSTS
+    scope: RUN_TIME
+    value: ${APP_DOMAIN}
+  - key: CSRF_TRUSTED_ORIGINS
+    scope: RUN_TIME
+    value: ${APP_URL}
+  - key: PUBLIC_BASE_URL
+    scope: RUN_TIME
+    value: ${APP_URL}
+  - key: SECURE_SSL_REDIRECT
+    scope: RUN_TIME
+    value: "true"
+  # Demo only: seeds synthetic data + demo logins on first deploy. Never in production.
+  - key: DEMO_MODE
+    scope: RUN_TIME
+    value: "true"
+  - key: DEMO_BANNER
+    scope: RUN_TIME
+    value: "true"
+  - key: LOG_FORMAT
+    scope: RUN_TIME
+    value: json
+
+  # --- File storage (DigitalOcean Spaces is S3-compatible) -------------------------------
+  # Login and referrals work without it; uploads (logos, case documents) need it.
+  # When you create a Space, set S3_CHECK_BUCKET=true and fill in the values below.
+  - key: S3_CHECK_BUCKET
+    scope: RUN_TIME
+    value: "false"
+  - key: AWS_STORAGE_BUCKET_NAME
+    scope: RUN_TIME
+    value: health-depot-demo
+  - key: AWS_S3_ENDPOINT_URL
+    scope: RUN_TIME
+    value: https://nyc3.digitaloceanspaces.com
+  - key: AWS_S3_REGION_NAME
+    scope: RUN_TIME
+    value: nyc3
+  - key: AWS_DEFAULT_REGION
+    scope: RUN_TIME
+    value: nyc3
+  - key: CSP_STORAGE_ORIGIN
+    scope: RUN_TIME
+    value: https://nyc3.digitaloceanspaces.com
+  - key: AWS_ACCESS_KEY_ID
+    scope: RUN_TIME
+    type: SECRET
+    value: CHANGE-ME-spaces-access-key
+  - key: AWS_SECRET_ACCESS_KEY
+    scope: RUN_TIME
+    type: SECRET
+    value: CHANGE-ME-spaces-secret-key
+
+  # --- Email (any SMTP provider: SendGrid, Mailgun, Postmark, Amazon SES ...) -------------
+  # Until this is real, the worker logs send failures and keeps messages in the outbox;
+  # the app itself keeps working.
+  - key: EMAIL_HOST
+    scope: RUN_TIME
+    value: smtp.example.com
+  - key: EMAIL_PORT
+    scope: RUN_TIME
+    value: "587"
+  - key: EMAIL_USE_TLS
+    scope: RUN_TIME
+    value: "true"
+  - key: EMAIL_HOST_USER
+    scope: RUN_TIME
+    value: CHANGE-ME
+  - key: EMAIL_HOST_PASSWORD
+    scope: RUN_TIME
+    type: SECRET
+    value: CHANGE-ME
+  - key: DEFAULT_FROM_EMAIL
+    scope: RUN_TIME
+    value: Health Depot <no-reply@example.com>
+
+# PostgreSQL. "production: false" = a dev database (cheapest, fine for a demo).
+# For a managed cluster instead: production: true + cluster_name: <your-cluster>, and add
+# this app to the cluster's Trusted Sources.
+databases:
+  - name: db
+    engine: PG
+    version: "16"
+    production: false
+
+jobs:
+  - name: migrate
+    kind: PRE_DEPLOY  # runs before every deploy; the deploy stops if it fails
+    github:
+      repo: OWNER/REPO
+      branch: main
+      deploy_on_push: true
+    source_dir: /
+    dockerfile_path: Dockerfile
+    run_command: entrypoint.sh migrate
+    instance_size_slug: apps-s-1vcpu-1gb
+    envs:
+      - key: DATABASE_URL
+        scope: RUN_TIME
+        value: ${db.DATABASE_URL}
+
+services:
+  - name: web
+    github:
+      repo: OWNER/REPO
+      branch: main
+      deploy_on_push: true
+    source_dir: /
+    dockerfile_path: Dockerfile
+    run_command: entrypoint.sh web
+    http_port: 8000
+    instance_count: 1
+    instance_size_slug: apps-s-1vcpu-1gb
+    envs:
+      - key: DATABASE_URL
+        scope: RUN_TIME
+        value: ${db.DATABASE_URL}
+      - key: GUNICORN_WORKERS
+        scope: RUN_TIME
+        value: "2"
+
+workers:
+  - name: worker
+    github:
+      repo: OWNER/REPO
+      branch: main
+      deploy_on_push: true
+    source_dir: /
+    dockerfile_path: Dockerfile
+    run_command: entrypoint.sh worker
+    instance_count: 1
+    instance_size_slug: apps-s-1vcpu-0.5gb
+    envs:
+      - key: DATABASE_URL
+        scope: RUN_TIME
+        value: ${db.DATABASE_URL}
+
+ingress:
+  rules:
+    - component:
+        name: web
+      match:
+        path:
+          prefix: /

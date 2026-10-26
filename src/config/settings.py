@@ -113,6 +113,12 @@ TEMPLATES = [
 DATABASES = {"default": env.db("DATABASE_URL")}
 DATABASES["default"]["CONN_MAX_AGE"] = 60
 DATABASES["default"]["CONN_HEALTH_CHECKS"] = True
+# Fail fast when the database is unreachable (e.g. a firewall/trusted-sources rule) instead of
+# hanging until Gunicorn kills the worker, which a hosting proxy reports as a 502/503.
+if DATABASES["default"].get("ENGINE", "").endswith("postgresql"):
+    DATABASES["default"].setdefault("OPTIONS", {}).setdefault(
+        "connect_timeout", env.int("DATABASE_CONNECT_TIMEOUT", default=10)
+    )
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Database cache: shared across web and worker containers (used by rate limiting later).

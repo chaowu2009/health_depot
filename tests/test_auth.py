@@ -133,3 +133,23 @@ def test_password_policy_minimum_12_characters():
 def test_admin_login_goes_through_main_login(client):
     resp = client.get("/admin/login/", secure=True)
     assert resp.status_code == 302 and reverse("account_login") in resp["Location"]
+
+
+@pytest.mark.django_db
+def test_mfa_disabled_skips_code_and_enrollment(client, settings):
+    settings.MFA_ENABLED = False
+    settings.MFA_REQUIRED = False
+    user = UserFactory()
+    enroll_mfa(user)  # even users with an authenticator sign in with just a password
+    resp = client.post(
+        reverse("account_login"), {"login": user.email, "password": PASSWORD}, secure=True
+    )
+    assert resp.status_code == 302 and resp["Location"] != reverse("mfa_authenticate")
+    page = client.get("/dashboard/", secure=True)
+    assert page.status_code == 200
+    assert b"Two-factor settings" not in page.content
+
+    other = UserFactory()  # no authenticator: not sent to the setup page either
+    client.post(reverse("account_logout"), secure=True)
+    client.post(reverse("account_login"), {"login": other.email, "password": PASSWORD}, secure=True)
+    assert client.get("/dashboard/", secure=True).status_code == 200

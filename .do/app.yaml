@@ -42,6 +42,10 @@ envs:
   - key: DEMO_BANNER
     scope: RUN_TIME
     value: "true"
+  # Two-factor sign-in switched off for the hosted demo. Set "true" to require it again.
+  - key: MFA_ENABLED
+    scope: RUN_TIME
+    value: "false"
   - key: LOG_FORMAT
     scope: RUN_TIME
     value: json

@@ -156,6 +156,12 @@ MFA_TOTP_ISSUER = "Health Depot"
 MFA_RECOVERY_CODE_COUNT = 10
 # Every user must enroll an authenticator app before using the system (RFP 3.9).
 MFA_REQUIRED = env.bool("MFA_REQUIRED", default=True)
+# Master switch. MFA_ENABLED=false turns two-factor off completely: no enrollment step and no
+# code at sign-in, even for users who already have an authenticator. Demo hosting only —
+# the RFP (3.9) requires MFA, so keep the default (true) for any real deployment.
+MFA_ENABLED = env.bool("MFA_ENABLED", default=True)
+if not MFA_ENABLED:
+    MFA_REQUIRED = False
 # Audit: take the client IP from X-Forwarded-For set by our proxy (Caddy now, AWS ALB later).
 AUDIT_TRUST_X_FORWARDED_FOR = env.bool("AUDIT_TRUST_X_FORWARDED_FOR", default=True)
 

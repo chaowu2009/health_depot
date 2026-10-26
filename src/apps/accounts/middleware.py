@@ -23,7 +23,8 @@ class RequireMFAMiddleware:
     def __call__(self, request: HttpRequest) -> HttpResponse:
         user = getattr(request, "user", None)
         if (
-            getattr(settings, "MFA_REQUIRED", True)
+            getattr(settings, "MFA_ENABLED", True)
+            and getattr(settings, "MFA_REQUIRED", True)
             and user is not None
             and user.is_authenticated
             and not request.path.startswith(ALLOWED_PREFIXES)

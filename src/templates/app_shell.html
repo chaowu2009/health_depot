@@ -72,7 +72,7 @@
           </button>
           <div x-show="open" x-cloak @click.outside="open = false" class="absolute right-0 mt-2 w-56 rounded-md border border-slate-200 bg-white py-1 shadow-lg" role="menu">
             <p class="px-4 py-2 text-xs text-slate-500">{{ user.get_role_display }}{% if user.organization %} · {{ user.organization }}{% endif %}</p>
-            <a href="{% url 'mfa_index' %}" class="block px-4 py-2 text-sm hover:bg-slate-50" role="menuitem">Two-factor settings</a>
+            {% if MFA_ENABLED %}<a href="{% url 'mfa_index' %}" class="block px-4 py-2 text-sm hover:bg-slate-50" role="menuitem">Two-factor settings</a>{% endif %}
             <a href="{% url 'account_change_password' %}" class="block px-4 py-2 text-sm hover:bg-slate-50" role="menuitem">Change password</a>
             <form method="post" action="{% url 'account_logout' %}">{% csrf_token %}
               <button type="submit" class="block w-full px-4 py-2 text-left text-sm hover:bg-slate-50" role="menuitem">Sign out</button>

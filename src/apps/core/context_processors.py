@@ -17,6 +17,7 @@ def app_context(request: HttpRequest) -> dict[str, Any]:
     return {
         "APP_NAME": settings.APP_NAME,
         "DEMO_BANNER": settings.DEMO_BANNER,
+        "MFA_ENABLED": getattr(settings, "MFA_ENABLED", True),
         "main_nav": main_nav,
         "phase2_nav": phase2_nav,
         "unread_notifications": unread,

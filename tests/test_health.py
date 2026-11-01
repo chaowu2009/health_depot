@@ -49,3 +49,22 @@ def test_wsgi_liveness_answers_any_host():
         start_response,
     )
     assert seen["status"] == "200 OK" and b"".join(body) == b"ok"
+
+
+@pytest.mark.django_db
+def test_prepare_database_passes_when_tables_can_be_created(capsys):
+    from django.core.management import call_command
+
+    call_command("prepare_database")
+    assert "can create tables in schema 'public'" in capsys.readouterr().out
+
+
+def test_prepare_database_warns_about_locked_public_schema(capsys):
+    """Locked "public" schema: a clear warning, not a crash (an already-migrated DB is fine)."""
+    from django.core.management import call_command
+
+    fake = mock.MagicMock()
+    fake.cursor.return_value.__enter__.return_value.fetchone.return_value = (False,)
+    with mock.patch("apps.core.management.commands.prepare_database.connection", fake):
+        call_command("prepare_database")
+    assert "can't create tables in schema 'public'" in capsys.readouterr().err

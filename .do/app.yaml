@@ -49,6 +49,12 @@ envs:
     value: https://CHANGE-ME-space-name.nyc3.digitaloceanspaces.com
   - key: S3_CREATE_BUCKET
     value: "false"
+  # Set to "false" to skip the storage check until the Space and its keys exist.
+  - key: S3_CHECK_BUCKET
+    value: "true"
+  # For a managed cluster that locks down "public", uncomment to keep tables in their own schema:
+  # - key: DATABASE_SCHEMA
+  #   value: healthdepot
   # No SMTP server yet: notification emails are written to the log instead of sent.
   - key: EMAIL_BACKEND
     value: django.core.mail.backends.console.EmailBackend

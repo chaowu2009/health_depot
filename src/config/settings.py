@@ -113,6 +113,12 @@ TEMPLATES = [
 DATABASES = {"default": env.db("DATABASE_URL")}
 DATABASES["default"]["CONN_MAX_AGE"] = 60
 DATABASES["default"]["CONN_HEALTH_CHECKS"] = True
+# Optional: keep all tables in their own schema (for hosts that lock down "public").
+DATABASE_SCHEMA = env("DATABASE_SCHEMA", default="")
+if DATABASE_SCHEMA:
+    if not DATABASE_SCHEMA.replace("_", "").isalnum() or not DATABASE_SCHEMA[0].isalpha():
+        raise ValueError("DATABASE_SCHEMA must be letters, digits and underscores.")
+    DATABASES["default"].setdefault("OPTIONS", {})["options"] = f"-c search_path={DATABASE_SCHEMA}"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Database cache: shared across web and worker containers (used by rate limiting later).

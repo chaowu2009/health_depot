@@ -39,7 +39,8 @@ for the failing component.
 | Log shows | Cause | Fix |
 |---|---|---|
 | `ImproperlyConfigured: Set the … environment variable` | A setting is missing | Add it in the App Spec (`envs`) |
-| `Bucket … is not reachable` (migrate job) | Space name, region or keys wrong | Check the Space settings and keys |
+| `NoCredentialsError: Unable to locate credentials` or `Bucket … not reachable` (migrate job) | No Spaces keys, or wrong Space name/region | Add the Space and its keys, or set `S3_CHECK_BUCKET=false` to skip the check for now (uploads and logos won't work until keys are added) |
+| `permission denied for schema public` (migrate job) | Database user can't create tables (PostgreSQL 15+ dev databases) | Set `DATABASE_SCHEMA=healthdepot`, or use a managed database cluster |
 | `OOMKilled` / "exceeding resource limits" | Too little memory | Use the 1 GB size, keep `GUNICORN_WORKERS=2` |
 | Health check failures | Wrong port | `http_port: 8000` with `PORT=8000` (both already in the spec) |
 | `exec format error` | Image built on an ARM computer and pushed | Deploy from GitHub (App Platform builds for its own servers) or build with `--platform linux/amd64` |

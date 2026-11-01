@@ -32,13 +32,18 @@ case "$ROLE" in
     ;;
   migrate)
     python manage.py wait_for_db
+    python manage.py prepare_database
     python manage.py migrate --noinput
     python manage.py createcachetable
     python manage.py bootstrap
     if [ "${DEMO_MODE:-false}" = "true" ]; then
       python manage.py seed_demo  # loads synthetic demo data only if the database is empty
     fi
-    if [ "${S3_CREATE_BUCKET:-false}" = "true" ]; then
+    # File storage check. S3_CHECK_BUCKET=false skips it (e.g. a hosted demo without
+    # storage keys yet); S3_CREATE_BUCKET=true creates the bucket (local SeaweedFS).
+    if [ "${S3_CHECK_BUCKET:-true}" = "false" ]; then
+      echo "Skipping file storage check (S3_CHECK_BUCKET=false). Uploads need valid AWS_* settings."
+    elif [ "${S3_CREATE_BUCKET:-false}" = "true" ]; then
       python manage.py ensure_bucket
     else
       python manage.py ensure_bucket --no-create

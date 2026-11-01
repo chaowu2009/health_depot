@@ -50,10 +50,15 @@ RUN groupadd --system --gid 10001 app \
 WORKDIR /app
 COPY --chmod=0755 scripts/entrypoint.sh /usr/local/bin/entrypoint.sh
 COPY --chmod=0755 scripts/healthcheck.py /usr/local/bin/healthcheck.py
+# Some builders (e.g. DigitalOcean App Platform) ignore COPY --chmod, and files committed from
+# Windows can lose the executable bit or gain CRLF line endings. Fix both explicitly.
+RUN sed -i 's/\r$//' /usr/local/bin/entrypoint.sh /usr/local/bin/healthcheck.py \
+ && chmod 0755 /usr/local/bin/entrypoint.sh /usr/local/bin/healthcheck.py
 EXPOSE 8000
 HEALTHCHECK --interval=15s --timeout=10s --start-period=60s --retries=3 \
   CMD ["python", "/usr/local/bin/healthcheck.py"]
-ENTRYPOINT ["entrypoint.sh"]
+# Run through sh so the container starts even if the executable bit is missing.
+ENTRYPOINT ["/bin/sh", "/usr/local/bin/entrypoint.sh"]
 
 # --- Development image (code is mounted by compose.yaml) -----------------------------------
 FROM base AS dev

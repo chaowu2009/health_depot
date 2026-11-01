@@ -2,6 +2,7 @@ from typing import Any
 
 from allauth.account.forms import LoginForm as LoginFormBase
 from django import forms
+from django.conf import settings
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from django.forms import inlineformset_factory
@@ -127,3 +128,15 @@ class LoginForm(LoginFormBase):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["password"].help_text = ""
+        if settings.DEMO_MODE:
+            # Demo convenience: accept a bare name like "test" and add the demo domain.
+            self.fields["login"] = forms.CharField(
+                label="Email or demo username",
+                widget=forms.TextInput(attrs={"autocomplete": "username", "autofocus": True}),
+            )
+
+    def clean_login(self):
+        login = super().clean_login()
+        if settings.DEMO_MODE and login and "@" not in login:
+            login = f"{login}@demo.healthdepot.local"
+        return login

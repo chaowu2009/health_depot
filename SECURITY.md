@@ -37,7 +37,7 @@ Status as of October 2026 (MVP / demo build). The first part describes controls 
 - **One enforcement point:** every query for client data goes through a central, tested rule set
   (`apps/accounts/access.py`). Records outside a user's scope return "not found" (HTTP 404), so
   record IDs cannot be probed. Record IDs are random UUIDs, not sequential numbers.
-- 130+ automated tests (131 at last run) cover these rules, including cross-program and cross-partner access
+- 130+ automated tests (134 at last run) cover these rules, including cross-program and cross-partner access
   attempts.
 
 ### Audit logging
@@ -111,7 +111,7 @@ Status as of October 2026 (MVP / demo build). The first part describes controls 
 | Alpine.js needs `'unsafe-eval'` in the CSP | Small interactive widgets (menus, tabs) evaluate expressions. Inline scripts are still blocked. | Move to Alpine's CSP build or plain JS before production. |
 | Local storage is not encrypted at rest | Docker volumes on the demo laptop. | Production uses KMS-encrypted RDS and S3. |
 | Rate-limit counters use the database cache | Counts can be slightly approximate under heavy load. | Use a dedicated cache (ElastiCache/Redis) in production. |
-| Demo credentials are published | Shared demo password and authenticator key in DEMO_SCRIPT.md. | Demo only; `DEMO_MODE` is off in real deployments. |
+| Demo credentials are published | Shared demo password and authenticator key in DEMO_SCRIPT.md. A short `test` / `test2026` admin login exists for quick demos and deliberately skips the 12-character rule (still requires two-factor). | Demo only: these accounts and the bare-username login exist only when `DEMO_MODE=true`, which is off in real deployments. |
 | arm64 image build | Dockerfile has no architecture-specific steps and all base images are multi-arch, but the arm64 build was not executed in this build environment. | Run `make build-multiarch` on a machine with Docker Buildx. |
 
 ## 3. Production gaps (to complete before go-live)

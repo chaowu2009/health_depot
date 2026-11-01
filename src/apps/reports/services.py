@@ -117,7 +117,23 @@ def dashboard(user, *, start: date, end: date, program=None, partner=None) -> di
         if c.zip_code:
             zips[c.zip_code[:5]] += 1
 
+    # Closed-loop funnel: how far each referral in the period has progressed.
+    reached_received = [r for r in rows if r.received_at or r.status != "SUBMITTED"]
+    reached_accepted = [
+        r for r in rows if r.accepted_at or r.status in ("ACCEPTED", "IN_PROGRESS", "COMPLETED")
+    ]
+    funnel = [
+        ("Submitted", total),
+        ("Received", len(reached_received)),
+        ("Accepted", len(reached_accepted)),
+        ("Services delivered", len(completed)),
+    ]
+
     return {
+        "funnel": [
+            {"label": label, "count": n, "pct": round(100 * n / total) if total else 0}
+            for label, n in funnel
+        ],
         "kpis": {
             "referrals": total,
             "this_month": this_month.count(),

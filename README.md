@@ -26,13 +26,15 @@ local compose files.
 | Demo login (`@demo.healthdepot.local`) | Role |
 |---|---|
 | `admin` | System administrator (Avery Morgan) |
+| `test` | System administrator — quick test login, password **`test2026`** (type just `test` as the username) |
 | `manager` | Program manager (Dana Whitfield) |
 | `staff` | CCHD staff (Jordan Rivera) |
 | `leader` | Read-only leadership (Dr. Patricia Hale) |
 | `partner` | Community partner (Sam Okonkwo, food bank) |
 
 Password for all: `HealthDepot-Demo-2026!` · Two-factor: add the key
-`HEALTHDEPOTDEMOKEYCALVERTCOUNTYM` to any authenticator app (time-based, 6 digits).
+`HEALTHDEPOTDEMOKEYCALVERTCOUNTYM` to any authenticator app (time-based, 6 digits) — or scan
+`demo-2fa-qr.png`, or run `.\tasks.ps1 code` to print the current code.
 Walkthrough: **DEMO_SCRIPT.md** · Reset demo data: `.\tasks.ps1 reset-demo -Prod` or
 **Users & access → Tools** · Proposal materials: **PROPOSAL_NOTES.md**, `screenshots/`,
 `DEMO_VIDEO_NARRATION.md`. More: **DEPLOYMENT_LOCAL.md**, **DEPLOYMENT_AWS_GOVCLOUD.md**,
@@ -128,6 +130,3 @@ See `CLAUDE.md` (project brief, rules and folder structure) and `docs/DATA_MODEL
 
 Every setting is an environment variable — see `.env.example`. The same image runs locally
 and, later, in AWS GovCloud with only environment changes (see CLAUDE.md section 6).
-
-## how go log in
-The first build takes about 5–10 minutes. After that, open https://localhost and log in with staff@demo.healthdepot.local, password HealthDepot-Demo-2026!. For the 2-factor code, add the key HEALTHDEPOTDEMOKEYCALVERTCOUNTYM to your authenticator app.

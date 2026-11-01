@@ -30,8 +30,8 @@ def test_seed_and_reset(settings):
     assert ReferralEvent.objects.filter(event_type="STATUS_CHANGE").count() >= 60
     assert Case.objects.exists()
     demo = User.objects.filter(email__endswith="@demo.healthdepot.local")
-    assert demo.count() == 25
-    assert Authenticator.objects.filter(user__in=demo).count() == 25  # MFA pre-enrolled
+    assert demo.count() == 26  # 25 demo users + the short "test" admin login
+    assert Authenticator.objects.filter(user__in=demo).count() == 26  # MFA pre-enrolled
     assert set(demo.values_list("role", flat=True)) == set(User.Role.values)
     assert not AuditLog.objects.exists()  # seeding is not audited activity
     statuses = set(Referral.objects.values_list("status", flat=True))
@@ -52,3 +52,43 @@ def test_all_names_are_fictional_markers(settings):
 
     partners = Organization.objects.filter(org_type="COMMUNITY_PARTNER")
     assert partners.count() == 10 and all("(fictional)" in p.name for p in partners)
+
+
+@pytest.mark.django_db
+def test_test_login_is_system_admin_with_short_password(settings):
+    from apps.core.management.commands.seed_demo import Command
+
+    from .factories import HealthDepartmentFactory
+
+    settings.DEMO_MODE = True
+    HealthDepartmentFactory(slug="cchd")
+    user = Command().ensure_test_user()
+    assert user.email == "test@demo.healthdepot.local"
+    assert user.role == "SYSTEM_ADMIN"
+    assert user.check_password("test2026")
+    # Running it again repairs rather than duplicates.
+    Command().ensure_test_user()
+    from apps.accounts.models import User
+
+    assert User.objects.filter(email="test@demo.healthdepot.local").count() == 1
+
+
+def test_bare_demo_username_signs_in_to_the_2fa_step(client, settings):
+    from apps.core.management.commands.seed_demo import Command
+
+    from .factories import HealthDepartmentFactory
+
+    settings.DEMO_MODE = True
+    HealthDepartmentFactory(slug="cchd")
+    Command().ensure_test_user()
+    resp = client.post("/accounts/login/", {"login": "test", "password": "test2026"}, secure=True)
+    assert resp.status_code == 302 and "2fa" in resp["Location"]
+
+
+def test_login_form_keeps_email_only_outside_demo(settings):
+    from apps.accounts.forms import LoginForm
+
+    settings.DEMO_MODE = False
+    form = LoginForm(data={"login": "test", "password": "x"})
+    assert not form.is_valid()
+    assert "login" in form.errors

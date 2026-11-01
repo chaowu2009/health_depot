@@ -51,10 +51,9 @@ WORKDIR /app
 COPY --chmod=0755 scripts/entrypoint.sh /usr/local/bin/entrypoint.sh
 COPY --chmod=0755 scripts/healthcheck.py /usr/local/bin/healthcheck.py
 EXPOSE 8000
-HEALTHCHECK --interval=15s --timeout=5s --start-period=30s --retries=3 \
+HEALTHCHECK --interval=15s --timeout=10s --start-period=60s --retries=3 \
   CMD ["python", "/usr/local/bin/healthcheck.py"]
-
-ENTRYPOINT ["/bin/sh", "/usr/local/bin/entrypoint.sh"]
+ENTRYPOINT ["entrypoint.sh"]
 
 # --- Development image (code is mounted by compose.yaml) -----------------------------------
 FROM base AS dev

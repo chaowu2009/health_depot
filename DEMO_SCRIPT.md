@@ -28,6 +28,7 @@ Password for all: **`HealthDepot-Demo-2026!`**
 | Program manager | `manager@demo.healthdepot.local` — Dana Whitfield | All programs; manages partners & forms |
 | Leadership (read-only) | `leader@demo.healthdepot.local` — Dr. Patricia Hale | Dashboards and records, no editing |
 | System administrator | `admin@demo.healthdepot.local` — Avery Morgan | Everything + users, audit log, tools |
+| Quick test login | Username `test`, password `test2026` — Test Administrator | Same as system administrator |
 | Partner (food bank) | `partner@demo.healthdepot.local` — Sam Okonkwo | Only Chesapeake Community Food Bank's referrals |
 
 More demo users exist for every program and partner (see **Users & access**).

@@ -81,6 +81,9 @@ def test_dashboard_metrics_respect_scope(data):
     assert perf["partner"] == "Fictional Pantry" and perf["received"] == 4
     assert perf["accepted_pct"] == 50 and perf["completion_pct"] == 50
     assert sum(sum(s["data"]) for s in d["over_time"]["series"]) == 4
+    funnel = {step["label"]: step["count"] for step in d["funnel"]}
+    assert funnel == {"Submitted": 4, "Received": 2, "Accepted": 1, "Services delivered": 1}
+    assert d["funnel"][0]["pct"] == 100 and d["funnel"][-1]["pct"] == 25
 
 
 def test_dashboard_page_renders_charts_and_tables(client, data):
@@ -88,6 +91,7 @@ def test_dashboard_page_renders_charts_and_tables(client, data):
     html = client.get("/dashboard/", secure=True).content.decode()
     assert 'id="dashboard-data"' in html and "chart-over-time" in html
     assert "View as table" in html and "Partner performance" in html
+    assert "Closing the loop" in html
 
 
 def test_partner_dashboard_only_their_referrals(client, data):

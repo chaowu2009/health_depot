@@ -36,6 +36,10 @@ from apps.referrals.services import new_reference_number
 DEMO_DOMAIN = "demo.healthdepot.local"
 DEMO_PASSWORD = "HealthDepot-Demo-2026!"  # nosec B105 - documented demo-only credential
 DEMO_TOTP_SECRET = "HEALTHDEPOTDEMOKEYCALVERTCOUNTYM"  # nosec B105 - demo-only, documented
+# Short "test" login requested by the owner for quick demos. Demo-only: it skips the
+# 12-character password policy on purpose and exists only when DEMO_MODE=true.
+TEST_LOGIN = "test"
+TEST_PASSWORD = "test2026"  # nosec B105 - documented demo-only credential
 
 TOWNS = [  # (town, ZIP, weight)
     ("Prince Frederick", "20678", 20),
@@ -189,10 +193,12 @@ class Command(BaseCommand):
         call_command("bootstrap", verbosity=0)
         with suppress_audit(), transaction.atomic():
             if not opts["reset"] and Referral.objects.exists():
+                self.ensure_test_user()
                 self.stdout.write("Demo data already present. Use --reset to rebuild it.")
                 return
             self.reset()  # also clears half-made setup data on a fresh database
             self.build(opts["clients"], opts["referrals"])
+            self.ensure_test_user()
         self.stdout.write(
             self.style.SUCCESS(
                 f"Demo data ready: {Client.objects.count()} clients, {Referral.objects.count()} "
@@ -202,6 +208,29 @@ class Command(BaseCommand):
         self.stdout.write(
             f"Demo password: {DEMO_PASSWORD}   Authenticator secret: {DEMO_TOTP_SECRET}"
         )
+
+    # ------------------------------------------------------------------------------------
+    def ensure_test_user(self):
+        """Create (or repair) the short 'test' system-administrator login."""
+        cchd = Organization.objects.get(slug="cchd")
+        user, _ = User.objects.update_or_create(
+            email=f"{TEST_LOGIN}@{DEMO_DOMAIN}",
+            defaults={
+                "first_name": "Test",
+                "last_name": "Administrator",
+                "role": "SYSTEM_ADMIN",
+                "title": "Demo test account",
+                "organization": cchd,
+                "is_staff": True,
+                "is_superuser": False,
+                "is_active": True,
+            },
+        )
+        user.set_password(TEST_PASSWORD)  # set directly: demo-only, bypasses length policy
+        user.save()
+        if not Authenticator.objects.filter(user=user, type=Authenticator.Type.TOTP).exists():
+            TOTP.activate(user, DEMO_TOTP_SECRET)
+        return user
 
     # ------------------------------------------------------------------------------------
     def reset(self):

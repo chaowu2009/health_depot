@@ -4,17 +4,21 @@
   var el = document.getElementById("dashboard-data");
   if (!el || !window.Chart) return;
   var data = JSON.parse(el.textContent);
+  var ready = document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve();
+  ready.then(function () { draw(data); });
+  function draw(data) {
   // Validated categorical palette (fixed order) + text tokens.
   var SERIES = ["#2a78d6", "#eda100", "#1baf7a", "#eb6834"];
-  var INK = "#334155", MUTED = "#64748b", GRID = "#e2e8f0";
+  var PRIMARY = "#005ea2";  // single-series bars use the site's primary blue
+  var INK = "#1b1b1b", MUTED = "#565c65", GRID = "#e6e6e6";
 
-  // Same system font stack as the page (measured correctly for axis label widths).
-  Chart.defaults.font.family = "system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif";
+  // Same self-hosted font as the page (falls back to system fonts).
+  Chart.defaults.font.family = "'Public Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif";
   Chart.defaults.font.size = 12;
   Chart.defaults.color = MUTED;
   Chart.defaults.plugins.legend.labels.boxWidth = 12;
   Chart.defaults.plugins.legend.labels.color = INK;
-  Chart.defaults.plugins.tooltip.backgroundColor = "#0f172a";
+  Chart.defaults.plugins.tooltip.backgroundColor = "#162e51";
   Chart.defaults.plugins.tooltip.padding = 10;
   Chart.defaults.maintainAspectRatio = false;
   Chart.defaults.animation = false;
@@ -36,7 +40,7 @@
         datasets: [{
           label: opts.label || "Referrals",
           data: pairs.map(function (p) { return p[1]; }),
-          backgroundColor: opts.color || SERIES[0],
+          backgroundColor: opts.color || PRIMARY,
           borderRadius: 4, borderSkipped: "start", maxBarThickness: 22,
           borderColor: "#ffffff", borderWidth: { left: 0, right: 0, top: 2, bottom: 2 },
         }],
@@ -104,4 +108,5 @@
   bar("chart-ethnicities", data.ethnicities);
   bar("chart-languages", data.languages);
   bar("chart-zips", data.zips);
+  }
 })();

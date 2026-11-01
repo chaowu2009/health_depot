@@ -11,7 +11,11 @@ a CDN or external font service at runtime (required for offline demos and govern
 | SortableJS | 1.15.7 | `src/static/vendor/Sortable.min.js` | npm `sortablejs` |
 | Tailwind CSS | 4.3.3 | build-time only (`package.json`); output `src/static/css/app.css` | npm `@tailwindcss/cli` |
 
-Fonts: system font stack only (no downloaded fonts).
+| Public Sans | 5.2.5 (Fontsource) | `src/static/vendor/fonts/public-sans-latin-{400,600,700}-normal.woff2` | npm `@fontsource/public-sans` — SIL OFL 1.1 (`OFL-PublicSans.txt`) |
+| Merriweather | 5.2.6 (Fontsource) | `src/static/vendor/fonts/merriweather-latin-{400,700}-normal.woff2` | npm `@fontsource/merriweather` — SIL OFL 1.1 (`OFL-Merriweather.txt`) |
+
+Fonts: Public Sans (body; the typeface of the U.S. Web Design System) and Merriweather
+(page headings), self-hosted. Latin subset only, which covers English and Spanish.
 
 Source-map comments (`//# sourceMappingURL=...`) are removed from vendored files because the map files are not shipped. Checksums (after that change): `src/static/vendor/SHA256SUMS`. Verify with `sha256sum -c SHA256SUMS` from that folder.
 To upgrade a library: download the new file, update this table and the checksum, and test.

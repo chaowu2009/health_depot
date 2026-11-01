@@ -1,73 +1,57 @@
-# Deploying Health Depot on DigitalOcean App Platform (demo)
+# Health Depot — Demo on DigitalOcean App Platform
 
-App Platform does **not** run `compose.yaml`, so the `db`, `s3`, `mailpit` and `migrate`
-services from the local stack don't exist there. You supply them as App Platform pieces:
+For a **public demo with synthetic data only**. This isn't the planned production hosting
+(see DEPLOYMENT_AWS_GOVCLOUD.md), and it must never hold real client information.
 
-| Local (compose) | App Platform |
-|---|---|
-| `db` (postgres) | Database component (dev database or managed PostgreSQL cluster) |
-| `migrate` | **PRE_DEPLOY job** running `entrypoint.sh migrate` |
-| `web` | Service, HTTP port 8000, `entrypoint.sh web` |
-| `worker` | Worker, `entrypoint.sh worker` |
-| `s3` (SeaweedFS) | DigitalOcean Spaces (S3-compatible) — optional for a first demo |
-| `mailpit` | Any SMTP provider |
-| `proxy` (Caddy) | App Platform's built-in HTTPS (sends `X-Forwarded-Proto`) |
+## What runs
 
-The ready-made spec is **`.do/app.yaml`**.
+| Component | App Platform type | Size | Command |
+|---|---|---|---|
+| `web` | Service (public HTTPS) | 1 GB (`apps-s-1vcpu-1gb`) | `entrypoint.sh web` |
+| `worker` | Worker | 512 MB | `entrypoint.sh worker` |
+| `migrate` | Pre-deploy job | 1 GB | `entrypoint.sh migrate` (migrations + demo data on first deploy) |
+| `db` | Dev PostgreSQL 16 | — | provides `${db.DATABASE_URL}` |
+| File storage | A DigitalOcean **Space** (S3-compatible) | — | logos, documents |
 
-## Why a first deploy shows no tables / 503 on login
+Email has no SMTP server here, so notification emails are written to the app log
+(`EMAIL_BACKEND=…console…`). Add an SMTP provider later by changing the `EMAIL_*` settings.
 
-If only the web service runs, nothing ever runs `migrate`, so the database has no tables
-(no users, no `django_cache` table used by the login rate limiter). The login page renders,
-but posting the form fails. If the database isn't attached or reachable at all, requests hang
-until Gunicorn kills the worker and the platform answers 502/503.
+## Steps
 
-## Deploy
+1. **Push the project to GitHub.** Don't push `.env`; `.gitignore` already excludes it.
+2. **Create a Space:** Spaces Object Storage → Create, region `nyc3`, private. Then
+   **API → Spaces Keys → Generate** and copy the key and secret.
+3. **Create or fix the app:** in your app, open **Settings → App Spec → Edit**. Paste
+   `.do/app.yaml` and replace every `CHANGE-ME`:
+   - the GitHub `repo` (3 places)
+   - `DJANGO_SECRET_KEY`: a long random string, for example from
+     `python -c "import secrets; print(secrets.token_urlsafe(50))"`
+   - the Space name (2 places) and the Spaces key and secret
+4. **Save.** App Platform builds the image, runs `migrate`, then starts `web` and `worker`.
+   The first deploy takes about 5–10 minutes.
+5. Open the app URL and sign in, for example as `test` / `test2026` plus the 2-factor code.
 
-1. Push the code to GitHub (`.env` is gitignored — keep it that way).
-2. Edit `.do/app.yaml`: replace `OWNER/REPO` (3 places) and every `CHANGE-ME` value.
-   Generate a secret key with
-   `python -c "import secrets; print(secrets.token_urlsafe(50))"`.
-3. Create or update the app:
-   - New: `doctl apps create --spec .do/app.yaml`
-   - Existing: Control Panel → app → **Settings → App Spec → Edit**, paste, Save.
-4. Watch **Activity → Deploy logs → migrate**. You should see `Database is ready.`,
-   migrations, `Bootstrap complete.` and the demo seed summary.
-5. Open the app URL and sign in with a demo login from README.md
-   (e.g. `admin@demo.healthdepot.local` / `HealthDepot-Demo-2026!`, TOTP key
-   `HEALTHDEPOTDEMOKEYCALVERTCOUNTYM`).
+## If a deploy fails
 
-## Fix an app that is already deployed (no redeploy needed)
+Open the app → **Activity** → the failed deploy, then check **Deploy logs** and **Runtime logs**
+for the failing component.
 
-Control Panel → app → **Console** → choose `web`, then run:
+| Log shows | Cause | Fix |
+|---|---|---|
+| `ImproperlyConfigured: Set the … environment variable` | A setting is missing | Add it in the App Spec (`envs`) |
+| `Bucket … is not reachable` (migrate job) | Space name, region or keys wrong | Check the Space settings and keys |
+| `OOMKilled` / "exceeding resource limits" | Too little memory | Use the 1 GB size, keep `GUNICORN_WORKERS=2` |
+| Health check failures | Wrong port | `http_port: 8000` with `PORT=8000` (both already in the spec) |
+| `exec format error` | Image built on an ARM computer and pushed | Deploy from GitHub (App Platform builds for its own servers) or build with `--platform linux/amd64` |
 
-```
-entrypoint.sh migrate
-```
+## Security note for a public demo
 
-(With `DEMO_MODE=true` this also loads demo users. Otherwise create an admin with
-`entrypoint.sh manage createsuperuser`.) Then add the PRE_DEPLOY job so future deploys
-migrate automatically.
+`DEMO_MODE=true` loads the demo accounts, and their passwords and 2-factor key are published in
+the docs. Anyone who finds the URL can sign in, including as an administrator. That's
+acceptable for synthetic data, but:
 
-## Checklist when something is still wrong
-
-- **Database attached?** `DATABASE_URL` must be `${db.DATABASE_URL}` on web, worker **and**
-  the job. With a managed cluster, add the app to the cluster's **Trusted Sources**.
-- `https://<app>.ondigitalocean.app/health/ready` → `{"database": "up"}`.
-- **400 Bad Request** → `ALLOWED_HOSTS` doesn't include the app domain.
-- **403 CSRF** on login → `CSRF_TRUSTED_ORIGINS` must be the full `https://...` URL.
-- **Job fails on storage** → set `S3_CHECK_BUCKET=false` until Spaces is configured.
-- **Out of memory / restarts** → use a 1 GB instance or `GUNICORN_WORKERS=2`.
-- **Custom domain** → add it to `ALLOWED_HOSTS`, `CSRF_TRUSTED_ORIGINS` and
-  `PUBLIC_BASE_URL`.
-
-## Storage (Spaces)
-
-Create a Space (e.g. `health-depot-demo` in `nyc3`) and a Spaces access key, fill in the
-`AWS_*` values in the spec, set `S3_CHECK_BUCKET=true`, and redeploy. Keep the Space private
-— the app only hands out short-lived presigned URLs.
-
-## Not for production
-
-`DEMO_MODE=true` loads synthetic data and enables the demo reset tool. A real deployment
-turns it off and follows DEPLOYMENT_AWS_GOVCLOUD.md.
+- Share the URL only with evaluators, and delete the app after the evaluation.
+- Or change the demo passwords, including `test`'s, under **Users & access** after the first
+  deploy. Changed passwords are kept on later deploys.
+- The site footer states it's a demonstration system and not an official county website.
+  Keep that wording.

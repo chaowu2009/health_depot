@@ -37,7 +37,7 @@ Password for all: `HealthDepot-Demo-2026!` · Two-factor: add the key
 `demo-2fa-qr.png`, or run `.\tasks.ps1 code` to print the current code.
 Walkthrough: **DEMO_SCRIPT.md** · Reset demo data: `.\tasks.ps1 reset-demo -Prod` or
 **Users & access → Tools** · Proposal materials: **PROPOSAL_NOTES.md**, `screenshots/`,
-`DEMO_VIDEO_NARRATION.md`. More: **DEPLOYMENT_LOCAL.md**, **DEPLOYMENT_AWS_GOVCLOUD.md**,
+`DEMO_VIDEO_NARRATION.md`. More: **DEPLOYMENT_LOCAL.md**, **DEPLOYMENT_DIGITALOCEAN.md** (public demo), **DEPLOYMENT_AWS_GOVCLOUD.md**,
 **SECURITY.md**.
 
 ## Start it (one command)

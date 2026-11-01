@@ -113,12 +113,6 @@ TEMPLATES = [
 DATABASES = {"default": env.db("DATABASE_URL")}
 DATABASES["default"]["CONN_MAX_AGE"] = 60
 DATABASES["default"]["CONN_HEALTH_CHECKS"] = True
-# Fail fast when the database is unreachable (e.g. a firewall/trusted-sources rule) instead of
-# hanging until Gunicorn kills the worker, which a hosting proxy reports as a 502/503.
-if DATABASES["default"].get("ENGINE", "").endswith("postgresql"):
-    DATABASES["default"].setdefault("OPTIONS", {}).setdefault(
-        "connect_timeout", env.int("DATABASE_CONNECT_TIMEOUT", default=10)
-    )
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Database cache: shared across web and worker containers (used by rate limiting later).
@@ -156,12 +150,6 @@ MFA_TOTP_ISSUER = "Health Depot"
 MFA_RECOVERY_CODE_COUNT = 10
 # Every user must enroll an authenticator app before using the system (RFP 3.9).
 MFA_REQUIRED = env.bool("MFA_REQUIRED", default=True)
-# Master switch. MFA_ENABLED=false turns two-factor off completely: no enrollment step and no
-# code at sign-in, even for users who already have an authenticator. Demo hosting only —
-# the RFP (3.9) requires MFA, so keep the default (true) for any real deployment.
-MFA_ENABLED = env.bool("MFA_ENABLED", default=True)
-if not MFA_ENABLED:
-    MFA_REQUIRED = False
 # Audit: take the client IP from X-Forwarded-For set by our proxy (Caddy now, AWS ALB later).
 AUDIT_TRUST_X_FORWARDED_FOR = env.bool("AUDIT_TRUST_X_FORWARDED_FOR", default=True)
 
@@ -263,8 +251,10 @@ STORAGES = {
 }
 
 # --- Email: standard SMTP (Mailpit locally, Amazon SES SMTP later) -------------------------
-EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-EMAIL_HOST = env("EMAIL_HOST")
+# SMTP everywhere; set to django.core.mail.backends.console.EmailBackend where no SMTP
+# server is available yet (emails are then written to the log instead of sent).
+EMAIL_BACKEND = env("EMAIL_BACKEND", default="django.core.mail.backends.smtp.EmailBackend")
+EMAIL_HOST = env("EMAIL_HOST", default="localhost")
 EMAIL_PORT = env("EMAIL_PORT")
 EMAIL_HOST_USER = env("EMAIL_HOST_USER", default="")
 EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD", default="")

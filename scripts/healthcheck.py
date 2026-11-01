@@ -11,7 +11,9 @@ role = Path("/tmp/hd-role").read_text().strip() if Path("/tmp/hd-role").exists()
 
 if role in {"web", "dev"}:
     try:
-        with urllib.request.urlopen("http://127.0.0.1:8000/health/live", timeout=4) as resp:  # noqa: S310  # nosec B310 - fixed local URL
+        with urllib.request.urlopen(
+            f"http://127.0.0.1:{os.environ.get('PORT', '8000')}/health/live", timeout=4
+        ) as resp:  # noqa: S310  # nosec B310 - fixed local URL
             sys.exit(0 if resp.status == 200 else 1)
     except Exception:  # noqa: BLE001
         sys.exit(1)

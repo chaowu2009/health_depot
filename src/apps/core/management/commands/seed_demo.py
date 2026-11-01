@@ -213,7 +213,7 @@ class Command(BaseCommand):
     def ensure_test_user(self):
         """Create (or repair) the short 'test' system-administrator login."""
         cchd = Organization.objects.get(slug="cchd")
-        user, _ = User.objects.update_or_create(
+        user, created = User.objects.update_or_create(
             email=f"{TEST_LOGIN}@{DEMO_DOMAIN}",
             defaults={
                 "first_name": "Test",
@@ -226,8 +226,9 @@ class Command(BaseCommand):
                 "is_active": True,
             },
         )
-        user.set_password(TEST_PASSWORD)  # set directly: demo-only, bypasses length policy
-        user.save()
+        if created:  # keep a password an administrator changed later
+            user.set_password(TEST_PASSWORD)  # set directly: demo-only, bypasses length policy
+            user.save()
         if not Authenticator.objects.filter(user=user, type=Authenticator.Type.TOTP).exists():
             TOTP.activate(user, DEMO_TOTP_SECRET)
         return user

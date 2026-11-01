@@ -66,8 +66,12 @@ def test_test_login_is_system_admin_with_short_password(settings):
     assert user.email == "test@demo.healthdepot.local"
     assert user.role == "SYSTEM_ADMIN"
     assert user.check_password("test2026")
-    # Running it again repairs rather than duplicates.
+    # Running it again doesn't duplicate, and keeps a password an admin changed.
+    user.set_password("a-new-longer-password-2026")
+    user.save()
     Command().ensure_test_user()
+    user.refresh_from_db()
+    assert user.check_password("a-new-longer-password-2026")
     from apps.accounts.models import User
 
     assert User.objects.filter(email="test@demo.healthdepot.local").count() == 1

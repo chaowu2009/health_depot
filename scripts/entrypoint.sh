@@ -1,6 +1,8 @@
 #!/bin/sh
 # Health Depot container entrypoint. Usage: entrypoint.sh {web|worker|migrate|dev|manage ...}
 set -eu
+# Some platforms (e.g. DigitalOcean App Platform run_command) pass the entrypoint name again.
+case "${1:-}" in entrypoint.sh|*/entrypoint.sh) shift ;; esac
 ROLE="${1:-web}"
 echo "$ROLE" > /tmp/hd-role 2>/dev/null || true
 
@@ -11,8 +13,8 @@ esac
 case "$ROLE" in
   web)
     exec gunicorn config.wsgi:application \
-      --bind 0.0.0.0:8000 \
-      --workers "${GUNICORN_WORKERS:-3}" \
+      --bind "0.0.0.0:${PORT:-8000}" \
+      --workers "${GUNICORN_WORKERS:-2}" \
       --timeout "${GUNICORN_TIMEOUT:-60}" \
       --worker-tmp-dir /tmp \
       --no-control-socket \
@@ -29,19 +31,14 @@ case "$ROLE" in
     exec python manage.py run_worker
     ;;
   migrate)
-    # Hosted platforms (e.g. DigitalOcean App Platform) run this as a pre-deploy job.
-    python manage.py wait_for_db --timeout "${DB_WAIT_TIMEOUT:-120}"
+    python manage.py wait_for_db
     python manage.py migrate --noinput
     python manage.py createcachetable
     python manage.py bootstrap
     if [ "${DEMO_MODE:-false}" = "true" ]; then
       python manage.py seed_demo  # loads synthetic demo data only if the database is empty
     fi
-    # S3_CHECK_BUCKET=false skips the storage check (storage not configured yet). Login and
-    # referrals still work; only file uploads/downloads need storage.
-    if [ "${S3_CHECK_BUCKET:-true}" != "true" ]; then
-      echo "Skipping storage bucket check (S3_CHECK_BUCKET=${S3_CHECK_BUCKET})."
-    elif [ "${S3_CREATE_BUCKET:-false}" = "true" ]; then
+    if [ "${S3_CREATE_BUCKET:-false}" = "true" ]; then
       python manage.py ensure_bucket
     else
       python manage.py ensure_bucket --no-create

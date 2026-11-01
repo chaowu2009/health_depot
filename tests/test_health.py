@@ -33,3 +33,19 @@ def test_health_not_redirected_to_https(client, settings):
 def test_request_id_header(client):
     resp = client.get("/health/live")
     assert len(resp["X-Request-ID"]) >= 8
+
+
+def test_wsgi_liveness_answers_any_host():
+    """Platform health checkers call the container by IP; /health/live must still answer."""
+    from config.wsgi import application
+
+    seen = {}
+
+    def start_response(status, headers):
+        seen["status"] = status
+
+    body = application(
+        {"PATH_INFO": "/health/live", "REQUEST_METHOD": "GET", "HTTP_HOST": "10.244.0.7:8080"},
+        start_response,
+    )
+    assert seen["status"] == "200 OK" and b"".join(body) == b"ok"

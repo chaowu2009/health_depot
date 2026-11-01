@@ -28,6 +28,9 @@ envs:
     value: "true"
   - key: DEMO_BANNER
     value: "true"
+  # Two-factor sign-in switched off for the hosted demo. Set "true" to require it again.
+  - key: MFA_ENABLED
+    value: "false"
   - key: LOG_FORMAT
     value: json
   # File storage: a DigitalOcean Space (S3-compatible). Create the Space first.

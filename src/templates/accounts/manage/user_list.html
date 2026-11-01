@@ -27,7 +27,8 @@
   </form>
 
   <div class="mt-4 overflow-x-auto rounded-xl border border-slate-200 bg-white">
-    <table class="min-w-full divide-y divide-slate-200 text-sm">
+    {% if not MFA_ENABLED %}<p class="mb-3 rounded-md border border-slate-200 bg-white px-4 py-2 text-sm text-slate-700" role="note"><strong class="font-semibold text-ink">Two-factor sign-in is switched off on this demo site.</strong> Enrollment status is still tracked below; set <code>MFA_ENABLED=true</code> to require it.</p>{% endif %}
+<table class="min-w-full divide-y divide-slate-200 text-sm">
       <caption class="sr-only">Users</caption>
       <thead class="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
         <tr><th scope="col" class="px-4 py-3">Name</th><th scope="col" class="px-4 py-3">Role</th><th scope="col" class="px-4 py-3">Organization</th><th scope="col" class="px-4 py-3">Two-factor</th><th scope="col" class="px-4 py-3">Status</th><th scope="col" class="px-4 py-3">Last sign-in</th></tr>

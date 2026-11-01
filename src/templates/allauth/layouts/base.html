@@ -26,6 +26,16 @@
       <a class="font-medium text-brand-600 underline" href="{% url 'home' %}">Back to {{ APP_NAME }}</a>
     </p>
     {% endif %}
+    {% if not MFA_ENABLED %}
+    <div class="mt-6 border-l-4 border-brand-600 bg-brand-50 px-4 py-3 text-sm text-ink" role="note">
+      <p class="flex items-center gap-2 font-semibold"><svg aria-hidden="true" class="h-4 w-4 text-brand-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg>Two-factor authentication: available</p>
+      {% if "/2fa" in request.path %}
+      <p class="mt-1 text-slate-700">It's switched off on this demo site, so codes aren't asked for at sign-in. You can still set up an authenticator app here to see how enrollment and recovery codes work.</p>
+      {% else %}
+      <p class="mt-1 text-slate-700">Health Depot supports sign-in with a password plus a 6-digit code from an authenticator app, with one-time recovery codes. It's switched off on this demo site so evaluators can sign in with just a password; in production it's required for every user.</p>
+      {% endif %}
+    </div>
+    {% endif %}
     <div class="mt-6 border-l-4 border-gold-400 bg-[#faf3d1] px-4 py-3 text-sm text-ink" role="note">
       <p class="font-semibold">Authorized use only</p>
       <p class="mt-1 text-slate-700">This system is for Calvert County Health Department staff and approved community partners. Use is monitored and every sign-in is logged.</p>
